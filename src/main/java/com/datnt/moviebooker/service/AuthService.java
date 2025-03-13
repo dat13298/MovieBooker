@@ -33,12 +33,7 @@ public class AuthService {
     }
 
     public String refreshAccessToken(String refreshToken) {
-        var tokenEntity = refreshTokenService.findByToken(refreshToken);
-
-        if (tokenEntity == null || refreshTokenService.isTokenExpired(tokenEntity)) {
-            throw new RuntimeException("Invalid or expired refresh token");
-        }
-
-        return jwtUtil.generateToken(tokenEntity.getUser().getUsername());
+        return jwtUtil.generateTokenFromRefreshToken(refreshToken);
     }
+
 }
