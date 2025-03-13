@@ -29,9 +29,9 @@ public class User {
     @Size(max = 50, min = 5, message = "Username must be between 5 and 50 characters")
     private String username;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, unique = true, length = 60)
     @NotNull(message = "Password can not null")
-    @Size(min = 8, max = 15, message = "Password must be between 8 and 15 characters")
+    @Size(min = 8, max = 60, message = "Password must be between 8 and 15 characters")
     private String password;
 
     @Column(nullable = false, unique = true, length = 50)
