@@ -8,13 +8,13 @@ import lombok.*;
 import java.util.Date;
 
 @Entity
+@Table(name = "movies")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Getter
 @Setter
 @ToString
-@Table(name = "movies")
 public class Movie {
 
     @Id

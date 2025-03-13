@@ -6,7 +6,7 @@ import lombok.*;
 import java.sql.Timestamp;
 
 @Entity
-@Table(name = "users")
+@Table(name = "refresh_tokens")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
