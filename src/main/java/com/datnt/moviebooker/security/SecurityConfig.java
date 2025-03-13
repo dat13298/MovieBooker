@@ -1,4 +1,4 @@
-package com.datnt.moviebooker.config.security;
+package com.datnt.moviebooker.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
