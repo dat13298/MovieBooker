@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -38,7 +39,8 @@ public class RefreshTokenService {
         refreshTokenRepository.deleteByUser(user);
     }
 
-    public RefreshToken findByToken(String token) {
-        return refreshTokenRepository.findByToken(token).orElse(null);
+    public Optional<RefreshToken> findByToken(String token) {
+        return refreshTokenRepository.findByToken(token);
     }
+
 }
