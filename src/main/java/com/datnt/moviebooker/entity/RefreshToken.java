@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Timestamp;
+import java.time.Instant;
 
 @Entity
 @Table(name = "refresh_tokens")
@@ -12,7 +13,6 @@ import java.sql.Timestamp;
 @Builder
 @Getter
 @Setter
-@ToString
 public class RefreshToken {
 
     @Id
@@ -26,4 +26,9 @@ public class RefreshToken {
     private String token;
 
     private Timestamp expiresAt;
+
+
+    public boolean isExpired() {
+        return expiresAt.before(Timestamp.from(Instant.now()));
+    }
 }
