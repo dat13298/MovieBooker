@@ -2,12 +2,11 @@ package com.datnt.moviebooker.service;
 
 import com.datnt.moviebooker.entity.User;
 import com.datnt.moviebooker.repository.UserRepository;
-import com.datnt.moviebooker.security.JwtUtil;
+import com.datnt.moviebooker.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,24 +15,33 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final RefreshTokenService refreshTokenService;
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
     private final UserRepository userRepository;
 
-    public String login(String username, String password) {
+    public AuthResponse login(String username, String password) {
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(username, password));
+                new UsernamePasswordAuthenticationToken(username, password)
+        );
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         User user = userRepository.findByUsername(username).orElseThrow();
 
-        String accessToken = jwtUtil.generateToken(username);
+        String accessToken = jwtService.generateToken(user.getUsername(), user.getRole().toString());
         var refreshToken = refreshTokenService.createRefreshToken(user);
 
-        return "Access Token: " + accessToken + "\nRefresh Token: " + refreshToken.getToken();
+        return new AuthResponse(accessToken, refreshToken.getToken(), user.getUsername(), user.getRole().toString());
     }
 
     public String refreshAccessToken(String refreshToken) {
-        return jwtUtil.generateTokenFromRefreshToken(refreshToken);
+        var tokenEntity = refreshTokenService.findByToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+
+        if (refreshTokenService.isTokenExpired(tokenEntity)) {
+            throw new RuntimeException("Refresh token expired");
+        }
+
+        var user = tokenEntity.getUser();
+        return jwtService.generateToken(user.getUsername(), user.getRole().toString());
     }
 
+    public record AuthResponse(String accessToken, String refreshToken, String username, String role) {}
 }
