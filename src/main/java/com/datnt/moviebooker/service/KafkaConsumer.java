@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 public class KafkaConsumer {
 
     private final BookingService bookingService;
-    private final StringRedisTemplate redisTemplate;
+    private final RedisService redisService;
 
     @KafkaListener(topics = "seat_booking", groupId = "movie_booking_group")
     public void listen(String message) {
@@ -34,9 +34,9 @@ public class KafkaConsumer {
 
             bookingService.processBooking(showTimeId, seatIds, userId);
 
-            redisTemplate.opsForValue().set(bookingId, "SUCCESS", 30, TimeUnit.SECONDS);
+            redisService.saveData(bookingId, "SUCCESS", 30, TimeUnit.SECONDS);
         } catch (RuntimeException e) {
-            redisTemplate.opsForValue().set(parts[0], "FAILED: " + e.getMessage(), 30, TimeUnit.SECONDS);
+            redisService.saveData(parts[0], "FAILED: " + e.getMessage(), 30, TimeUnit.SECONDS);
             throw e;
         }
     }
