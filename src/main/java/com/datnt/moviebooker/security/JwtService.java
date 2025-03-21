@@ -13,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +30,7 @@ public class JwtService {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    // ✅ Generate Access Token
+    // Generate Access Token
     public String generateToken(String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("username", username);
@@ -40,28 +39,12 @@ public class JwtService {
         return buildToken(claims, jwtExpiration);
     }
 
-    // ✅ Generate Token từ Refresh Token
-    public String generateTokenFromRefreshToken(String refreshToken) {
-        return refreshTokenService.findByToken(refreshToken)
-                .filter(token -> !token.isExpired())
-                .map(token -> generateToken(
-                        token.getUser().getUsername(),
-                        token.getUser().getRole().toString()
-                ))
-                .orElseThrow(() -> new RuntimeException("Invalid or expired refresh token"));
-    }
-
-    // ✅ Lấy username từ token
+    // get username from token
     public String getUsernameFromToken(String token) {
         return parseClaims(token).get("username", String.class);
     }
 
-    // ✅ Lấy role từ token
-    public String getRoleFromToken(String token) {
-        return parseClaims(token).get("role", String.class);
-    }
-
-    // ✅ Validate token
+    // Validate token
     public boolean validateToken(String token, UserDetails userDetails) {
         try {
             final String username = getUsernameFromToken(token);
@@ -71,7 +54,7 @@ public class JwtService {
         }
     }
 
-    // ✅ Check token hết hạn
+    // Check token Expired
     public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
@@ -80,7 +63,7 @@ public class JwtService {
         return parseClaims(token).getExpiration();
     }
 
-    // 🔥 Private method parse token
+    // Private method parse token
     private Claims parseClaims(String token) {
         return Jwts.parser()
                 .verifyWith(getSigningKey())
@@ -90,7 +73,7 @@ public class JwtService {
     }
 
 
-    // 🔥 Private method build token
+    // Private method build token
     private String buildToken(Map<String, Object> claims, long expiration) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration);
