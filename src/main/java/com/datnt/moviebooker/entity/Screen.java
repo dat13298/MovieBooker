@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 @Entity
-@Table(name = "creens")
+@Table(name = "screens")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -19,7 +19,7 @@ public class Screen {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, length = 50)
     @NotNull(message = "Name can not null")
     @Size(max = 50, min = 5, message = "Name must be between 5 and 50 characters")
     private String name;
