@@ -3,6 +3,9 @@ package com.datnt.moviebooker.service;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.UUID;
+
 @Service
 public class KafkaProducer {
 
@@ -12,7 +15,10 @@ public class KafkaProducer {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    public void sendMessage(String topic, String message) {
-        kafkaTemplate.send(topic, message);
+    public String sendSeatBookingRequest(Long showTimeId, List<Long> seatIds, Long userId) {
+        String bookingId = UUID.randomUUID().toString();
+        String message = bookingId + ":" + showTimeId + ":" + seatIds + ":" + userId;
+        kafkaTemplate.send("seat_booking_queue", message);
+        return bookingId;
     }
 }
