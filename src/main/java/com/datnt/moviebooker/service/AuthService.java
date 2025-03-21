@@ -25,6 +25,8 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(username, password)
         );
 
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
         User user = userRepository.findByUsername(username).orElseThrow();
 
         String accessToken = jwtService.generateToken(user.getUsername(), user.getRole().toString());
@@ -32,6 +34,7 @@ public class AuthService {
 
         return new AuthResponse(accessToken, refreshToken.getToken(), user.getUsername(), user.getRole().toString());
     }
+
 
     public String refreshAccessToken(String refreshToken) {
         var tokenEntity = refreshTokenService.findByToken(refreshToken)
@@ -57,7 +60,6 @@ public class AuthService {
     }
 
     private Long getUserIdFromUsername(String username) {
-        // Lấy user từ database qua repository
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"))
                 .getId();
