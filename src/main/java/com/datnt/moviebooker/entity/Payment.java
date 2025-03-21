@@ -44,6 +44,7 @@ public class Payment {
     private String transactionId;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
     private Status status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
