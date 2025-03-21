@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -41,6 +43,24 @@ public class AuthService {
 
         var user = tokenEntity.getUser();
         return jwtService.generateToken(user.getUsername(), user.getRole().toString());
+    }
+
+    public Long getCurrentUserId() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principal instanceof UserDetails) {
+            String username = ((UserDetails) principal).getUsername();
+            return getUserIdFromUsername(username);
+        } else {
+            throw new RuntimeException("User not authenticated");
+        }
+    }
+
+    private Long getUserIdFromUsername(String username) {
+        // Lấy user từ database qua repository
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"))
+                .getId();
     }
 
     public record AuthResponse(String accessToken, String refreshToken, String username, String role) {}
