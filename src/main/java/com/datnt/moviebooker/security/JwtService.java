@@ -47,6 +47,7 @@ public class JwtService {
     // Validate token
     public boolean validateToken(String token, UserDetails userDetails) {
         try {
+            // Get username from token
             final String username = getUsernameFromToken(token);
             return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
         } catch (Exception e) {
@@ -76,7 +77,7 @@ public class JwtService {
     // Private method build token
     private String buildToken(Map<String, Object> claims, long expiration) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
+        Date expiryDate = new Date(now.getTime() + expiration);// Set expiration time
 
         return Jwts.builder()
                 .subject(claims.get("username").toString())
