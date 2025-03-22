@@ -1,5 +1,8 @@
 package com.datnt.moviebooker.controller;
 
+import com.datnt.moviebooker.dto.AuthResponse;
+import com.datnt.moviebooker.dto.LoginRequest;
+import com.datnt.moviebooker.dto.RefreshTokenRequest;
 import com.datnt.moviebooker.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +16,7 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthService.AuthResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         var response = authService.login(request.username(), request.password());
         return ResponseEntity.ok(response);
     }
@@ -23,8 +26,4 @@ public class AuthController {
         var newAccessToken = authService.refreshAccessToken(request.refreshToken());
         return ResponseEntity.ok(newAccessToken);
     }
-
-    public record LoginRequest(String username, String password) {}
-
-    public record RefreshTokenRequest(String refreshToken) {}
 }
