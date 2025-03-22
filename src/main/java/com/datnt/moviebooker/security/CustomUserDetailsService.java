@@ -1,8 +1,7 @@
-package com.datnt.moviebooker.service;
+package com.datnt.moviebooker.security;
 
 import com.datnt.moviebooker.entity.User;
-import com.datnt.moviebooker.repository.UserRepository;
-import com.datnt.moviebooker.security.CustomUserDetails;
+import com.datnt.moviebooker.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -12,12 +11,11 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
-    public final UserRepository userRepository;
+    public final UserService userService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        User user = userService.findByUsername(username);
         return new CustomUserDetails(user);
     }
 }
