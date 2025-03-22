@@ -10,8 +10,8 @@ public class WebSocketService {
     private final SimpMessagingTemplate messagingTemplate;
 
     public void sendBookingStatus(String bookingId, String status) {
-//        messagingTemplate.convertAndSend("/topic/booking-status/" + bookingId, status);
-        System.out.println("Sending booking status: " + status);
-        messagingTemplate.convertAndSend("/topic/booking-status", status);
+        messagingTemplate.convertAndSend("/topic/booking-status/" + bookingId, status);
+//        System.out.println("Sending booking status: " + status);
+//        messagingTemplate.convertAndSend("/topic/booking-status", status);
     }
 }
