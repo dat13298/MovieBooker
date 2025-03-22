@@ -1,10 +1,13 @@
 package com.datnt.moviebooker.controller;
 
+import com.datnt.moviebooker.dto.BookingMessage;
 import com.datnt.moviebooker.dto.BookingRequest;
+import com.datnt.moviebooker.kafka.KafkaProducer;
 import com.datnt.moviebooker.service.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -18,27 +21,18 @@ public class BookingController {
     @PostMapping("/create")
     public ResponseEntity<?> createBooking(@RequestBody BookingRequest request) {
         Long userId = authService.getCurrentUserId();
+        String bookingId = UUID.randomUUID().toString();  // Tạo bookingId duy nhất
 
-        // send information to kafka for booking
-        String bookingId = kafkaProducer.sendSeatBookingRequest(request.getShowTimeId(), request.getSeatIds(), userId);
+        // Create message
+        BookingMessage message = new BookingMessage();
+        message.setBookingId(bookingId);
+        message.setUserId(userId);
+        message.setShowTimeId(request.showTimeId());
+        message.setSeatIds(request.seatIds());
 
-        // wait kafka process in Redis
-        String result = null;
-        for (int i = 0; i < 30; i++) {
-            result = redisService.getData(bookingId);
-            if (result != null) break;
-            try {
-                Thread.sleep(100); // wait 100ms per times
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        kafkaProducer.sendBookingMessage(message);
 
-        if (result == null) {
-            return ResponseEntity.status(500).body("Kafka timeout!");
-        }
-
-        return ResponseEntity.ok(result);
+        return ResponseEntity.ok(bookingId);
     }
 
 
