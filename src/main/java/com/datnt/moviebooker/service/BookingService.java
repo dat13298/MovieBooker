@@ -4,7 +4,6 @@ import com.datnt.moviebooker.constant.Status;
 import com.datnt.moviebooker.entity.*;
 import com.datnt.moviebooker.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,18 +16,9 @@ public class BookingService {
 
     private final BookingSeatRepository bookingSeatRepository;
     private final SeatRepository seatRepository;
-    private final UserRepository userRepository;
-    private final ShowTimeRepository showTimeRepository;
+    private final UserService userService;
+    private final ShowTimeService showTimeService;
     private final BookingRepository bookingRepository;
-    private final StringRedisTemplate redisTemplate;
-
-    public String getBookingStatus(String bookingId) {
-        return redisTemplate.opsForValue().get(bookingId);
-    }
-
-    public void saveBookingStatus(String bookingId, String status) {
-        redisTemplate.opsForValue().set(bookingId, status);
-    }
 
     public boolean isSeatAlreadyBooked(Long seatId, Long showTimeId) {
         return bookingSeatRepository.existsBySeat_IdAndBooking_ShowTime_Id(seatId, showTimeId);
@@ -36,18 +26,18 @@ public class BookingService {
 
     @Transactional
     public void processBooking(Long showTimeId, List<Long> seatIds, Long userId) {
-        // Check xem ghế đã được đặt chưa
+        // Check seat is already booked
         seatIds.forEach(seatId -> {
             if (isSeatAlreadyBooked(seatId, showTimeId)) {
                 throw new RuntimeException("Seat " + seatId + " already booked!");
             }
         });
 
-        // Lấy thông tin User và ShowTime
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found!"));
-        ShowTime showTime = showTimeRepository.findById(showTimeId).orElseThrow(() -> new RuntimeException("ShowTime not found!"));
+        // Get User and ShowTime
+        User user = userService.findById(userId);
+        ShowTime showTime = showTimeService.findById(showTimeId);
 
-        // Tạo Booking và lưu vào database trước
+        // Create Booking
         Booking booking = Booking.builder()
                 .user(user)
                 .showTime(showTime)
@@ -55,10 +45,10 @@ public class BookingService {
                 .createdAt(new Timestamp(System.currentTimeMillis()))
                 .build();
 
-        // Lưu booking trước để trở thành persistent object
+        // Save Booking to database
         booking = bookingRepository.save(booking);
 
-        // Lưu danh sách BookingSeat
+        // Save BookingSeat to database
         Booking finalBooking = booking;
         seatIds.forEach(seatId -> {
             Seat seat = seatRepository.findById(seatId).orElseThrow(() -> new RuntimeException("Seat not found!"));
