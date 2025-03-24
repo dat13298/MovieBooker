@@ -38,6 +38,10 @@ public class KafkaConsumer {
                     bookingMessage.getUserId()
             );
 
+            // remove seat lock from Redis
+            bookingMessage.getSeatIds().forEach(seatId ->
+                    redisService.releaseSeat(seatId, bookingMessage.getShowTimeId()));
+
             // Save booking status to Redis
             redisService.saveData(bookingId, "CONFIRMED", 60, TimeUnit.SECONDS);
 
