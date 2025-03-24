@@ -21,7 +21,15 @@ public class BookingController {
     @PostMapping("/create")
     public ResponseEntity<?> createBooking(@RequestBody BookingRequest request) {
         Long userId = authService.getCurrentUserId();
-        String bookingId = UUID.randomUUID().toString();  // Tạo bookingId duy nhất
+        String bookingId = UUID.randomUUID().toString();  // Create bookingId for tracking booking status
+
+        // check seat availability before booking
+        for (Long seatId : request.seatIds()) {
+            String lockedBy = redisService.getData("seat_lock:" + request.showTimeId() + ":" + seatId);
+            if (lockedBy == null || !lockedBy.equals(userId.toString())) {
+                return ResponseEntity.badRequest().body("Seat " + seatId + " is already booked or not locked!");
+            }
+        }
 
         // Create message
         BookingMessage message = new BookingMessage();
@@ -30,6 +38,7 @@ public class BookingController {
         message.setShowTimeId(request.showTimeId());
         message.setSeatIds(request.seatIds());
 
+        // Send message to Kafka
         kafkaProducer.sendBookingMessage(message);
 
         return ResponseEntity.ok(bookingId);
@@ -38,6 +47,7 @@ public class BookingController {
 
     @GetMapping("/status/{bookingId}")
     public ResponseEntity<?> getBookingStatus(@PathVariable String bookingId) {
+        // Get booking status from Redis
         String result = redisService.getData(bookingId);
         if (result == null) {
             return ResponseEntity.ok("Booking is being processed...");
