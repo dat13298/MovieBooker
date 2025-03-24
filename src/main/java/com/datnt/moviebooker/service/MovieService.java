@@ -4,6 +4,8 @@ import com.datnt.moviebooker.entity.Movie;
 import com.datnt.moviebooker.repository.MovieRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -14,11 +16,12 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class MovieService {
+    private static final Logger logger = LoggerFactory.getLogger(MovieService.class);
+
     private final MovieRepository movieRepository;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
@@ -32,11 +35,12 @@ public class MovieService {
                     try {
                         return objectMapper.readValue(json, Movie.class);
                     } catch (Exception e) {
+                        logger.error("Error parsing movie from cache", e);
                         return null;
                     }
                 })
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
 
         // if cache is empty, get all movies from database and save to cache
         if (cachedMovies.isEmpty()) {
@@ -44,7 +48,9 @@ public class MovieService {
             movies.forEach(movie -> {
                 try {
                     hashOps.put(MOVIE_CACHE_KEY, movie.getId().toString(), objectMapper.writeValueAsString(movie));
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    logger.error("Error saving movie to cache", e);
+                }
             });
             redisTemplate.expire(MOVIE_CACHE_KEY, 10, TimeUnit.MINUTES);
             cachedMovies = movies;
@@ -55,7 +61,7 @@ public class MovieService {
 
     public Movie createMovie(Movie movie) {
         Movie savedMovie = movieRepository.save(movie);
-        updateMovieCache(savedMovie);// save to cache
+        updateMovieCache(savedMovie);// add to cache
         return savedMovie;
     }
 
@@ -75,12 +81,39 @@ public class MovieService {
         redisTemplate.opsForHash().delete(MOVIE_CACHE_KEY, id.toString());// delete from cache
     }
 
+    public Movie findById(Long id) {
+        HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
+        // get movie from cache
+        String cachedMovie = hashOps.get(MOVIE_CACHE_KEY, id.toString());
+
+        // if cache is not empty, return movie
+        if (cachedMovie != null) {
+            try {
+                return objectMapper.readValue(cachedMovie, Movie.class);
+            } catch (Exception e) {
+                logger.error("Error parsing movie from cache", e);
+            }
+        }
+
+        // if cache is empty, get movie from database and save to cache
+        return  movieRepository.findById(id).map(movie -> {
+            try {
+                hashOps.put(MOVIE_CACHE_KEY, id.toString(), objectMapper.writeValueAsString(movie));
+            } catch (Exception e) {
+                logger.error("Error saving movie to cache", e);
+            }
+            return movie;
+        }).orElse(null);
+    }
+
     private void updateMovieCache(Movie movie) {
         try {
             // save to cache with key is movie id
             redisTemplate.opsForHash().put(MOVIE_CACHE_KEY, movie.getId().toString(), objectMapper.writeValueAsString(movie));
             redisTemplate.expire(MOVIE_CACHE_KEY, 10, TimeUnit.MINUTES);// set expire time
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            logger.error("Error saving movie to cache", e);
+        }
     }
 
     private Page<Movie> paginateList(List<Movie> movies, Pageable pageable) {
