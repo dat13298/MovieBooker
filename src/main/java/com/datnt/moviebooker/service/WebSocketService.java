@@ -14,4 +14,8 @@ public class WebSocketService {
 //        System.out.println("Sending booking status: " + status);
 //        messagingTemplate.convertAndSend("/topic/booking-status", status);
     }
+
+    public void sendSeatReleased(Long seatId, Long showTimeId) {
+        messagingTemplate.convertAndSend("/topic/seat-released", "Seat " + seatId + " for showtime " + showTimeId + " has been released.");
+    }
 }
