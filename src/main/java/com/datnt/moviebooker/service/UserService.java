@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -20,6 +21,7 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     public User findById(Long id) {
         return userRepository.findById(id).orElse(null);
@@ -46,17 +48,23 @@ public class UserService {
     }
 
     public UserResponse createUser(UserRequest request, boolean isAdmin) {
-        if (isAdmin && request.getRole() != Role.ROLE_ADMIN) {
-            throw new RuntimeException("Admin can only add another admin!");
+        Role requestedRole = request.getRole() != null ? request.getRole() : Role.ROLE_USER;
+
+        if (isAdmin && requestedRole != Role.ROLE_ADMIN) {
+            throw new IllegalArgumentException("Admin can only add another admin!");
         }
-        Role userRole = isAdmin ? request.getRole() : Role.ROLE_USER;
+
+        Role userRole = isAdmin ? requestedRole : Role.ROLE_USER;
 
         User newUser = userMapper.toEntity(request);
         newUser.setRole(userRole);
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
 
         User savedUser = userRepository.save(newUser);
+
         return userMapper.toResponse(savedUser);
     }
+
 
     public void deleteUser(Long id) {
         Optional<User> userOptional = userRepository.findById(id);
