@@ -7,4 +7,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface BookingSeatRepository extends JpaRepository<BookingSeat, Long> {
     boolean existsBySeat_IdAndBooking_ShowTime_Id(Long seatId, Long showTimeId);
+    void deleteByBooking_Id(Long bookingId);
 }
