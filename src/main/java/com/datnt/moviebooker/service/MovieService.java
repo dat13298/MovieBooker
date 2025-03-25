@@ -1,6 +1,9 @@
 package com.datnt.moviebooker.service;
 
+import com.datnt.moviebooker.dto.MovieRequest;
+import com.datnt.moviebooker.dto.MovieResponse;
 import com.datnt.moviebooker.entity.Movie;
+import com.datnt.moviebooker.mapper.MovieMapper;
 import com.datnt.moviebooker.repository.MovieRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -23,17 +27,18 @@ public class MovieService {
     private static final Logger logger = LoggerFactory.getLogger(MovieService.class);
 
     private final MovieRepository movieRepository;
+    private final MovieMapper movieMapper;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private static final String MOVIE_CACHE_KEY = "movies";
 
-    public Page<Movie> getAllMovies(Pageable pageable) {
+    public Page<MovieResponse> getAllMovies(Pageable pageable) {
         HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
-        // get all movies from cache
-        List<Movie> cachedMovies = hashOps.entries(MOVIE_CACHE_KEY).values().stream()
+
+        List<MovieResponse> cachedMovies = hashOps.entries(MOVIE_CACHE_KEY).values().stream()
                 .map(json -> {
                     try {
-                        return objectMapper.readValue(json, Movie.class);
+                        return objectMapper.readValue(json, MovieResponse.class);
                     } catch (Exception e) {
                         logger.error("Error parsing movie from cache", e);
                         return null;
@@ -42,9 +47,12 @@ public class MovieService {
                 .filter(Objects::nonNull)
                 .toList();
 
-        // if cache is empty, get all movies from database and save to cache
         if (cachedMovies.isEmpty()) {
-            List<Movie> movies = movieRepository.findAll();
+            List<MovieResponse> movies = movieRepository.findAll()
+                    .stream()
+                    .map(movieMapper::toResponse)
+                    .toList();
+
             movies.forEach(movie -> {
                 try {
                     hashOps.put(MOVIE_CACHE_KEY, movie.getId().toString(), objectMapper.writeValueAsString(movie));
@@ -52,6 +60,7 @@ public class MovieService {
                     logger.error("Error saving movie to cache", e);
                 }
             });
+
             redisTemplate.expire(MOVIE_CACHE_KEY, 10, TimeUnit.MINUTES);
             cachedMovies = movies;
         }
@@ -59,66 +68,64 @@ public class MovieService {
         return paginateList(cachedMovies, pageable);
     }
 
-    public Movie createMovie(Movie movie) {
-        Movie savedMovie = movieRepository.save(movie);
-        updateMovieCache(savedMovie);// add to cache
-        return savedMovie;
-    }
-
-    public Movie updateMovie(Long id, Movie updatedMovie) {
-        return movieRepository.findById(id).map(movie -> {
-            movie.setTitle(updatedMovie.getTitle());
-            movie.setDescription(updatedMovie.getDescription());
-            movie.setDuration(updatedMovie.getDuration());
-            Movie savedMovie = movieRepository.save(movie);
-            updateMovieCache(savedMovie);// update cache
-            return savedMovie;
-        }).orElse(null);
-    }
-
-    public void deleteMovie(Long id) {
-        movieRepository.deleteById(id);
-        redisTemplate.opsForHash().delete(MOVIE_CACHE_KEY, id.toString());// delete from cache
-    }
-
-    public Movie findById(Long id) {
+    public Optional<MovieResponse> getMovieById(Long id) {
         HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
-        // get movie from cache
         String cachedMovie = hashOps.get(MOVIE_CACHE_KEY, id.toString());
 
-        // if cache is not empty, return movie
         if (cachedMovie != null) {
             try {
-                return objectMapper.readValue(cachedMovie, Movie.class);
+                return Optional.of(objectMapper.readValue(cachedMovie, MovieResponse.class));
             } catch (Exception e) {
                 logger.error("Error parsing movie from cache", e);
             }
         }
 
-        // if cache is empty, get movie from database and save to cache
-        return  movieRepository.findById(id).map(movie -> {
+        return movieRepository.findById(id).map(movie -> {
+            MovieResponse response = movieMapper.toResponse(movie);
             try {
-                hashOps.put(MOVIE_CACHE_KEY, id.toString(), objectMapper.writeValueAsString(movie));
+                hashOps.put(MOVIE_CACHE_KEY, id.toString(), objectMapper.writeValueAsString(response));
             } catch (Exception e) {
                 logger.error("Error saving movie to cache", e);
             }
-            return movie;
-        }).orElse(null);
+            return response;
+        });
     }
 
-    private void updateMovieCache(Movie movie) {
+    public MovieResponse createMovie(MovieRequest movieRequest) {
+        Movie movie = movieMapper.toEntity(movieRequest);
+        Movie savedMovie = movieRepository.save(movie);
+        MovieResponse response = movieMapper.toResponse(savedMovie);
+        updateMovieCache(response);
+        return response;
+    }
+
+    public MovieResponse updateMovie(Long id, MovieRequest movieRequest) {
+        return movieRepository.findById(id).map(movie -> {
+            movieMapper.updateEntity(movie, movieRequest);
+            Movie updatedMovie = movieRepository.save(movie);
+            MovieResponse response = movieMapper.toResponse(updatedMovie);
+            updateMovieCache(response);
+            return response;
+        }).orElseThrow(() -> new RuntimeException("Movie not found"));
+    }
+
+    public void deleteMovie(Long id) {
+        movieRepository.deleteById(id);
+        redisTemplate.opsForHash().delete(MOVIE_CACHE_KEY, id.toString());
+    }
+
+    private void updateMovieCache(MovieResponse movie) {
         try {
-            // save to cache with key is movie id
             redisTemplate.opsForHash().put(MOVIE_CACHE_KEY, movie.getId().toString(), objectMapper.writeValueAsString(movie));
-            redisTemplate.expire(MOVIE_CACHE_KEY, 10, TimeUnit.MINUTES);// set expire time
+            redisTemplate.expire(MOVIE_CACHE_KEY, 10, TimeUnit.MINUTES);
         } catch (Exception e) {
             logger.error("Error saving movie to cache", e);
         }
     }
 
-    private Page<Movie> paginateList(List<Movie> movies, Pageable pageable) {
+    private Page<MovieResponse> paginateList(List<MovieResponse> movies, Pageable pageable) {
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), movies.size());
-        return new PageImpl<>(movies.subList(start, end), pageable, movies.size());// paginate list
+        return new PageImpl<>(movies.subList(start, end), pageable, movies.size());
     }
 }
