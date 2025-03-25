@@ -1,6 +1,13 @@
 package com.datnt.moviebooker.service;
 
+import com.datnt.moviebooker.dto.ShowTimeRequest;
+import com.datnt.moviebooker.dto.ShowTimeResponse;
+import com.datnt.moviebooker.entity.Movie;
+import com.datnt.moviebooker.entity.Screen;
 import com.datnt.moviebooker.entity.ShowTime;
+import com.datnt.moviebooker.mapper.ShowTimeMapper;
+import com.datnt.moviebooker.repository.MovieRepository;
+import com.datnt.moviebooker.repository.ScreenRepository;
 import com.datnt.moviebooker.repository.ShowTimeRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -24,18 +31,22 @@ public class ShowTimeService {
     private static final Logger logger = LoggerFactory.getLogger(ShowTimeService.class);
 
     private final ShowTimeRepository showTimeRepository;
+    private final MovieRepository movieRepository;
+    private final ScreenRepository screenRepository;
+    private final ShowTimeMapper showTimeMapper;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
+
     private static final String SHOWTIME_CACHE_KEY = "showTimes";
 
-    public Page<ShowTime> getAllShowTimes(Pageable pageable) {
+    public Page<ShowTimeResponse> getAllShowTimes(Pageable pageable) {
         HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
 
         // get all show times from cache
-        List<ShowTime> cachedShowTimes = hashOps.entries(SHOWTIME_CACHE_KEY).values().stream()
+        List<ShowTimeResponse> cachedShowTimes = hashOps.entries(SHOWTIME_CACHE_KEY).values().stream()
                 .map(json -> {
                     try {
-                        return objectMapper.readValue(json, ShowTime.class);
+                        return objectMapper.readValue(json, ShowTimeResponse.class);
                     } catch (Exception e) {
                         logger.error("Error parsing show time from cache", e);
                         return null;
@@ -47,57 +58,91 @@ public class ShowTimeService {
         // if cache is empty, get all show times from database and save to cache
         if (cachedShowTimes.isEmpty()) {
             List<ShowTime> showTimes = showTimeRepository.findAll();
+            cachedShowTimes = showTimes.stream()
+                    .map(showTimeMapper::toResponse)
+                    .collect(Collectors.toList());
+
             showTimes.forEach(this::updateShowTimeCache);
             redisTemplate.expire(SHOWTIME_CACHE_KEY, 10, TimeUnit.MINUTES);
-            cachedShowTimes = showTimes;
         }
 
         return paginateList(cachedShowTimes, pageable);
     }
 
-    public ShowTime createShowTime(ShowTime showTime) {
+    public ShowTimeResponse createShowTime(ShowTimeRequest request) {
+        Movie movie = movieRepository.findById(request.movieId())
+                .orElseThrow(() -> new RuntimeException("Movie not found!"));
+
+        Screen screen = screenRepository.findById(request.screenId())
+                .orElseThrow(() -> new RuntimeException("Screen not found!"));
+
+        ShowTime showTime = showTimeMapper.toEntity(request, movie, screen);
         ShowTime savedShowTime = showTimeRepository.save(showTime);
-        updateShowTimeCache(savedShowTime); // add new showtime to cache
-        return savedShowTime;
+
+        updateShowTimeCache(savedShowTime);
+
+        return showTimeMapper.toResponse(savedShowTime);
     }
 
-    public ShowTime updateShowTime(Long id, ShowTime updatedShowTime) {
+    public ShowTimeResponse updateShowTime(Long id, ShowTimeRequest request) {
         return showTimeRepository.findById(id).map(showTime -> {
-            showTime.setMovie(updatedShowTime.getMovie());
-            showTime.setStartTime(updatedShowTime.getStartTime());
-            ShowTime savedShowTime = showTimeRepository.save(showTime);
+            Movie movie = movieRepository.findById(request.movieId())
+                    .orElseThrow(() -> new RuntimeException("Movie not found!"));
 
-            clearShowTimeCache(); // delete all cache
-            return savedShowTime;
-        }).orElse(null);
+            Screen screen = screenRepository.findById(request.screenId())
+                    .orElseThrow(() -> new RuntimeException("Screen not found!"));
+
+            showTime.setMovie(movie);
+            showTime.setScreen(screen);
+            showTime.setStartTime(request.startTime());
+            showTime.setPrice(request.price());
+
+            ShowTime updatedShowTime = showTimeRepository.save(showTime);
+
+            clearShowTimeCache();
+            return showTimeMapper.toResponse(updatedShowTime);
+        }).orElseThrow(() -> new RuntimeException("ShowTime not found!"));
     }
 
     public void deleteShowTime(Long id) {
+        if (!showTimeRepository.existsById(id)) {
+            throw new RuntimeException("ShowTime not found!");
+        }
         showTimeRepository.deleteById(id);
-        redisTemplate.opsForHash().delete(SHOWTIME_CACHE_KEY, id.toString()); // delete showtime from cache
+        redisTemplate.opsForHash().delete(SHOWTIME_CACHE_KEY, id.toString());
     }
 
-    public ShowTime findById(Long id) {
+    public ShowTime findEntityById(Long id) {
+        return showTimeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("ShowTime not found!"));
+    }
+
+
+    public ShowTimeResponse findById(Long id) {
         HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
         String cachedShowTime = hashOps.get(SHOWTIME_CACHE_KEY, id.toString());
 
         if (cachedShowTime != null) {
             try {
-                return objectMapper.readValue(cachedShowTime, ShowTime.class);
+                return objectMapper.readValue(cachedShowTime, ShowTimeResponse.class);
             } catch (Exception e) {
                 logger.error("Error parsing show time from cache", e);
             }
         }
 
-        return showTimeRepository.findById(id).map(showTime -> {
-            updateShowTimeCache(showTime);
-            return showTime;
-        }).orElse(null);
+        return showTimeRepository.findById(id)
+                .map(showTime -> {
+                    ShowTimeResponse response = showTimeMapper.toResponse(showTime);
+                    updateShowTimeCache(showTime);
+                    return response;
+                })
+                .orElseThrow(() -> new RuntimeException("ShowTime not found!"));
     }
 
     private void updateShowTimeCache(ShowTime showTime) {
         try {
-            redisTemplate.opsForHash().put(SHOWTIME_CACHE_KEY, showTime.getId().toString(), objectMapper.writeValueAsString(showTime));
+            ShowTimeResponse response = showTimeMapper.toResponse(showTime);
+            redisTemplate.opsForHash().put(SHOWTIME_CACHE_KEY, showTime.getId().toString(), objectMapper.writeValueAsString(response));
         } catch (Exception e) {
             logger.error("Error saving show time to cache", e);
         }
@@ -107,7 +152,7 @@ public class ShowTimeService {
         redisTemplate.delete(SHOWTIME_CACHE_KEY);
     }
 
-    private Page<ShowTime> paginateList(List<ShowTime> showTimes, Pageable pageable) {
+    private Page<ShowTimeResponse> paginateList(List<ShowTimeResponse> showTimes, Pageable pageable) {
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), showTimes.size());
         return new PageImpl<>(showTimes.subList(start, end), pageable, showTimes.size());
