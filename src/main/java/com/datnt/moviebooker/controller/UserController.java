@@ -34,7 +34,7 @@ public class UserController {
     }
 
     // Admin add new admin, user register
-    @PostMapping
+    @PostMapping("/register")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest request) {
         boolean isAdmin = userService.isCurrentUserAdmin();
         UserResponse createdUser = userService.createUser(request, isAdmin);
