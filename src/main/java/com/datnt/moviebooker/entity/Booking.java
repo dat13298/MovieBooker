@@ -7,6 +7,8 @@ import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "bookings")
@@ -39,4 +41,8 @@ public class Booking {
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreatedDate
     private Timestamp createdAt;
+
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<BookingSeat> bookingSeats = new ArrayList<>();
+
 }
