@@ -43,4 +43,8 @@ public class Movie {
     @Column(nullable = false)
     @NotNull(message = "Release Date can not null")
     private Date releaseDate;
+
+    @Column(nullable = false, name = "image_url")
+    private String imageUrl;
+
 }
