@@ -1,5 +1,6 @@
 package com.datnt.moviebooker.mapper;
 
+import com.datnt.moviebooker.constant.Role;
 import com.datnt.moviebooker.dto.UserRequest;
 import com.datnt.moviebooker.dto.UserResponse;
 import com.datnt.moviebooker.entity.User;
@@ -28,12 +29,12 @@ public class UserMapper {
     }
 
     // Chuyển từ UserRequest DTO sang User entity
-    public User toEntity(UserRequest request) {
+    public User toEntity(UserRequest request, Role forcedRole) {
         return User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
-                .role(request.getRole())
+                .role(forcedRole)
                 .createdAt(new Timestamp(System.currentTimeMillis()))
                 .build();
     }
