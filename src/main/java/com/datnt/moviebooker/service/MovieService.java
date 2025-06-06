@@ -17,6 +17,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -74,23 +75,41 @@ public class MovieService {
 
 
     public MovieResponse createMovie(MovieRequest movieRequest) {
-        String imageUrl = cloudinaryService.uploadImage(movieRequest.getImage());
+        String imageUrl = null;
+        String publicId = null;
 
-        Movie movie = Movie.builder()
-                .title(movieRequest.getTitle())
-                .description(movieRequest.getDescription())
-                .duration(movieRequest.getDuration())
-                .imageUrl(imageUrl)
-                .rating(movieRequest.getRating())
-                .releaseDate(movieRequest.getReleaseDate())
-                .build();
+        try {
+            // 1. Upload ảnh lên Cloudinary
+            Map<String, String> uploadResult = cloudinaryService.uploadImageWithResult(movieRequest.getImage());
+            imageUrl = uploadResult.get("url");
+            publicId = uploadResult.get("publicId");
 
-        movieRepository.save(movie);
-        MovieResponse response = movieMapper.toResponse(movie);
+            // 2. Tạo entity Movie
+            Movie movie = Movie.builder()
+                    .title(movieRequest.getTitle())
+                    .description(movieRequest.getDescription())
+                    .duration(movieRequest.getDuration())
+                    .rating(movieRequest.getRating())
+                    .releaseDate(movieRequest.getReleaseDate())
+                    .imageUrl(imageUrl)
+                    .build();
 
-        updateMovieCache(response);
-        return response;
+            // 3. Lưu vào DB (có thể ném lỗi)
+            movieRepository.save(movie);
+
+            MovieResponse response = movieMapper.toResponse(movie);
+            updateMovieCache(response);
+            return response;
+
+        } catch (Exception e) {
+            // 4. Nếu DB save lỗi => rollback ảnh đã upload
+            if (publicId != null) {
+                cloudinaryService.deleteImage(publicId);
+            }
+            throw new RuntimeException("Failed to create movie: " + e.getMessage(), e);
+        }
     }
+
 
     public MovieResponse updateMovie(Long id, MovieRequest movieRequest) {
         return movieRepository.findById(id).map(movie -> {
