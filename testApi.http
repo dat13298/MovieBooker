@@ -33,3 +33,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkYXQxMzIiLCJpYXQiOjE3NDkxO
   "email": "testadmin@example.com",
   "role": "ROLE_ADMIN"
 }
+
+###
+POST http://localhost:8080/api/auth/refresh
+X-Refresh-Token: 940d89fb-cdc0-4a19-97fa-954493c8881c

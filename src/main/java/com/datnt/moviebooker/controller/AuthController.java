@@ -22,8 +22,8 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<String> refreshToken(@RequestBody RefreshTokenRequest request) {
-        var newAccessToken = authService.refreshAccessToken(request.refreshToken());
+    public ResponseEntity<String> refreshToken(@RequestHeader("X-Refresh-Token") String refreshToken) {
+        var newAccessToken = authService.refreshAccessToken(refreshToken);
         return ResponseEntity.ok(newAccessToken);
     }
 }
