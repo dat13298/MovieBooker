@@ -56,7 +56,7 @@ public class UserService {
 
         Role userRole = isAdmin ? requestedRole : Role.ROLE_USER;
 
-        User newUser = userMapper.toEntity(request);
+        User newUser = userMapper.toEntity(request, userRole);
         newUser.setRole(userRole);
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
 
@@ -79,5 +79,17 @@ public class UserService {
         return authentication.getAuthorities().stream()
                 .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals(Role.ROLE_ADMIN.name()));
     }
+
+    public UserResponse createUserAsAdmin(UserRequest request) {
+        // Nếu không gửi role, mặc định là USER
+        Role roleToAssign = request.getRole() != null ? request.getRole() : Role.ROLE_USER;
+
+        // Sử dụng mapper overload để truyền role chính xác
+        User newUser = userMapper.toEntity(request, roleToAssign);
+
+        User savedUser = userRepository.save(newUser);
+        return userMapper.toResponse(savedUser);
+    }
+
 
 }
