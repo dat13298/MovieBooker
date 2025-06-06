@@ -7,9 +7,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/movies")
@@ -30,10 +32,12 @@ public class MovieController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping
-    public ResponseEntity<MovieResponse> createMovie(@Valid @RequestBody MovieRequest movieRequest) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MovieResponse> createMovie(@Valid @ModelAttribute MovieRequest movieRequest) {
         return ResponseEntity.ok(movieService.createMovie(movieRequest));
     }
+
+
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
