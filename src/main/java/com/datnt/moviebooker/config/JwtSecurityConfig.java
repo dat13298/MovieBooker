@@ -61,6 +61,12 @@ public class JwtSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui.html",           // Spring Boot 3
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml"
+                        ).permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/register").permitAll()
                         .anyRequest().authenticated()
