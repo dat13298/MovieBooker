@@ -52,6 +52,11 @@ public class JwtService {
         }
     }
 
+    public String getClaimFromToken(String token, String claimKey) {
+        return parseClaims(token).get(claimKey, String.class);
+    }
+
+
     // Check token Expired
     public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());

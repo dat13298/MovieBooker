@@ -7,12 +7,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
@@ -24,6 +26,13 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     @Nullable HttpServletResponse response,
                                     @Nullable FilterChain filterChain) throws ServletException, IOException {
+
+        String path = request.getRequestURI();
+        if (path.equals("/api/users/register") || path.startsWith("/api/auth")) {
+            assert filterChain != null;
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // Get token from header
         String authHeader = request.getHeader("Authorization");
@@ -44,11 +53,16 @@ public class JwtFilter extends OncePerRequestFilter {
             var userDetails = userDetailsService.loadUserByUsername(username);
             // Validate token and set authentication
             if (jwtService.validateToken(token, userDetails)) {
+                String role = jwtService.getClaimFromToken(token, "role"); // 👈 bạn cần thêm hàm này
+
+                var authorities = List.of(new SimpleGrantedAuthority(role));
+
                 var authToken = new UsernamePasswordAuthenticationToken(
                         userDetails,
                         null,
-                        userDetails.getAuthorities()
+                        authorities // ✅ quyền từ JWT
                 );
+
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                 // Set authentication to context
