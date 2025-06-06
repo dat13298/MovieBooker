@@ -1,6 +1,5 @@
 package com.datnt.moviebooker.security;
 
-import com.datnt.moviebooker.service.RefreshTokenService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +22,6 @@ public class JwtService {
 
     @Value("${jwt.expiration}")
     private long jwtExpiration;
-
-    private final RefreshTokenService refreshTokenService;
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
