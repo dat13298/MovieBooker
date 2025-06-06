@@ -27,7 +27,7 @@ spring:
       host: localhost
       port: 6379
 cloudinary:
-  cloud-name: Movie_Booker
+  cloud-name: dizszyzuk
   api-key: 479647266682763
   api-secret: E5-ZV3OPuNWficc25RWDQSCtsfQ
 

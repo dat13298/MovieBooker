@@ -81,6 +81,8 @@ public class MovieService {
                 .description(movieRequest.getDescription())
                 .duration(movieRequest.getDuration())
                 .imageUrl(imageUrl)
+                .rating(movieRequest.getRating())
+                .releaseDate(movieRequest.getReleaseDate())
                 .build();
 
         movieRepository.save(movie);
@@ -99,6 +101,8 @@ public class MovieService {
             movie.setTitle(movieRequest.getTitle());
             movie.setDescription(movieRequest.getDescription());
             movie.setDuration(movieRequest.getDuration());
+            movie.setRating(movieRequest.getRating());
+            movie.setReleaseDate(movieRequest.getReleaseDate());
 
             movieRepository.save(movie);
             MovieResponse response = movieMapper.toResponse(movie);
