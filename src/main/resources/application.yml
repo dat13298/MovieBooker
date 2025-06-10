@@ -24,7 +24,7 @@ spring:
     locations: classpath:db/migration
   data:
     redis:
-      host: localhost
+      host: 127.0.0.1
       port: 6379
 cloudinary:
   cloud-name: dizszyzuk
@@ -39,3 +39,4 @@ jwt:
 logging:
   level:
     org.springframework.security: DEBUG
+    org.springframework.data.redis: DEBUG
