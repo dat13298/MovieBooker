@@ -10,4 +10,6 @@ public class MovieResponse {
     private String title;
     private String description;
     private int duration;
+    private String rating;
+    private String imageUrl;
 }

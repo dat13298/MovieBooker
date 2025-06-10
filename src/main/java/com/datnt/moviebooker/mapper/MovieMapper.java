@@ -22,6 +22,8 @@ public class MovieMapper {
                 .title(movie.getTitle())
                 .description(movie.getDescription())
                 .duration(movie.getDuration())
+                .rating(movie.getRating())
+                .imageUrl(movie.getImageUrl())
                 .build();
     }
 
