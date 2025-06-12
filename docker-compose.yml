@@ -19,8 +19,9 @@ services:
 
 
   redis:
-    image: redis:latest
+    image: redis:7.4.2
     container_name: redis_movie_booking
     ports:
       - "6379:6379"
     restart: always
+
