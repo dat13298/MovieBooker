@@ -1,7 +1,7 @@
 package com.datnt.moviebooker.controller;
 
-import com.datnt.moviebooker.constant.Role;
-import com.datnt.moviebooker.dto.UserRequest;
+import com.datnt.moviebooker.dto.AdminCreateUserRequest;
+import com.datnt.moviebooker.dto.UserRegisterRequest;
 import com.datnt.moviebooker.dto.UserResponse;
 import com.datnt.moviebooker.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,9 +22,8 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<Page<UserResponse>> getUsers(
-            @RequestParam(value = "role", required = false) Role role,
             Pageable pageable) {
-        Page<UserResponse> users = userService.getUsers(role, pageable);
+        Page<UserResponse> users = userService.getAllUsers(pageable);
         return ResponseEntity.ok(users);
     }
 
@@ -33,12 +32,15 @@ public class UserController {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
-    // Admin add new admin, user register
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody UserRequest request) {
-        boolean isAdmin = userService.isCurrentUserAdmin();
-        UserResponse createdUser = userService.createUser(request, isAdmin);
-        return ResponseEntity.ok(createdUser);
+    public ResponseEntity<UserResponse> register(@RequestBody @Valid UserRegisterRequest request) {
+        return ResponseEntity.ok(userService.registerUser(request));
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/admin/create")
+    public ResponseEntity<UserResponse> createByAdmin(@RequestBody @Valid AdminCreateUserRequest request) {
+        return ResponseEntity.ok(userService.createUserByAdmin(request));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
