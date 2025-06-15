@@ -56,23 +56,21 @@ public class JwtSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtFilter jwtFilter) throws Exception {
         http
-                .cors(cors -> {})
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers(
-                                "/swagger-ui.html", "/swagger-ui/**",
-                                "/v3/api-docs/**", "/v3/api-docs.yaml",
-                                "/ws/**", "/app/**", "/topic/**"
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/swagger-resources/**",
+                                "/v3/api-docs/**",
+                                "/webjars/**",
+                                "/swagger-config/**",
+                                "/error"
                         ).permitAll()
-
-                        // ✅ Cho phép gọi API public lấy phim
                         .requestMatchers(HttpMethod.GET, "/api/movies/**").permitAll()
-
-                        // ✅ Public cho login, register
                         .requestMatchers("/api/auth/**", "/api/users/register").permitAll()
-
-                        // 🔒 Còn lại yêu cầu xác thực
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
