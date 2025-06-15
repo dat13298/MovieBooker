@@ -27,9 +27,18 @@ public class JwtFilter extends OncePerRequestFilter {
                                     @Nullable HttpServletResponse response,
                                     @Nullable FilterChain filterChain) throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-        if (path.equals("/api/users/register") || path.startsWith("/api/auth")) {
-            assert filterChain != null;
+        String path = request.getServletPath();
+        if (
+                path.equals("/api/users/register") ||
+                        path.startsWith("/api/auth") ||
+                        path.startsWith("/swagger-ui") ||
+                        path.startsWith("/v3/api-docs") ||
+                        path.startsWith("/swagger-resources") ||
+                        path.startsWith("/swagger-config") ||
+                        path.startsWith("/webjars") ||
+                        path.equals("/swagger-ui.html") ||
+                        path.equals("/error")
+        ) {
             filterChain.doFilter(request, response);
             return;
         }
