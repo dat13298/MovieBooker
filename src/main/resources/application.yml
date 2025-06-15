@@ -5,7 +5,8 @@ spring:
     password: zNaNPvWUxHJEqJNdfgLMROJdwrFOjjBe
   jpa:
     hibernate:
-      ddl-auto: none
+#      ddl-auto: none
+      ddl-auto: update
     database-platform: org.hibernate.dialect.MySQL8Dialect
     show-sql: true
     properties:
@@ -20,8 +21,7 @@ spring:
       group-id: movie_booking_group
       auto-offset-reset: earliest
   flyway:
-    baseline-on-migrate: true
-    locations: classpath:db/migration
+    enabled: false
   data:
     redis:
       host: 127.0.0.1
