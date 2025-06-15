@@ -25,7 +25,6 @@ public class UserRepositoryTest {
                 .password("password123")
                 .email("datnt@gmail.com")
                 .role(Role.ROLE_ADMIN)
-                .createdAt(Timestamp.from(Instant.now()))
                 .build();
 
         User savedUser = userRepository.save(user);
