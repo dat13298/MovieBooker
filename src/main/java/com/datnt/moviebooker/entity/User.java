@@ -49,13 +49,16 @@ public class User extends BaseEntity {
     private Role role;
 
     @Temporal(TemporalType.DATE)
+    @Column(nullable = false, name = "date_of_birth")
     @JsonFormat(pattern = "yyyy-MM-dd")
     private Date DoB;
 
     @NotNull(message = "Gender cannot be null")
+    @Enumerated(EnumType.STRING)
     private Gender gender;
 
     @NotNull(message = "Phone number cannot be null")
+    @Column(nullable = false, unique = true, name = "phone_number")
     @Pattern(
             regexp = "^(0[1-9][0-9]{8})$",
             message = "Phone number must be 10 digits and start with 0"
