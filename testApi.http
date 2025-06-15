@@ -9,16 +9,27 @@ Content-Type: application/json
 {
   "username": "dat132",
   "password": "Abc@12345",
-  "email": "testuser@example.com",
-  "role": "ROLE_USER"
+  "email": "dat132@example.com",
+  "gender": "MALE",
+  "phoneNumber": "0909999999",
+  "DoB": "2000-01-01"
 }
 
-###
+###Admin login
 POST http://localhost:8080/api/auth/login
 Content-Type: application/json
 
 {
   "username": "dat132",
+  "password": "Abc@12345"
+}
+
+###User login
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "user123",
   "password": "Abc@12345"
 }
 
