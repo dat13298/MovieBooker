@@ -26,11 +26,11 @@ public class OTPPassword extends BaseEntity {
     @NotNull
     private String email;
 
-    @Column(unique = true)
+    @Column(unique = true, name = "otp_code", nullable = false)
     private String otpCode;
 
-    @Column(nullable = false)
-    private boolean used = false;
+    @Column(nullable = false, name = "is_used")
+    private boolean isUsed = false;
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime expiresAt;
