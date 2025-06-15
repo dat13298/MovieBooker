@@ -1,6 +1,8 @@
 package com.datnt.moviebooker.service;
 
 import com.datnt.moviebooker.constant.Role;
+import com.datnt.moviebooker.dto.AdminCreateUserRequest;
+import com.datnt.moviebooker.dto.UserRegisterRequest;
 import com.datnt.moviebooker.dto.UserRequest;
 import com.datnt.moviebooker.dto.UserResponse;
 import com.datnt.moviebooker.entity.User;
@@ -9,8 +11,6 @@ import com.datnt.moviebooker.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +22,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+
+    public UserResponse registerUser(UserRegisterRequest request) {
+        return createUserInternal(request, Role.ROLE_USER);
+    }
+
+    public UserResponse createUserByAdmin(AdminCreateUserRequest request) {
+        return createUserInternal(request, request.getRole());
+    }
 
     public User findById(Long id) {
         return userRepository.findById(id).orElse(null);
@@ -47,24 +55,19 @@ public class UserService {
         return userMapper.toResponse(user);
     }
 
-    public UserResponse createUser(UserRequest request, boolean isAdmin) {
-        Role requestedRole = request.getRole() != null ? request.getRole() : Role.ROLE_USER;
-
-        if (isAdmin && requestedRole != Role.ROLE_ADMIN) {
-            throw new IllegalArgumentException("Admin can only add another admin!");
-        }
-
-        Role userRole = isAdmin ? requestedRole : Role.ROLE_USER;
-
-        User newUser = userMapper.toEntity(request, userRole);
-        newUser.setRole(userRole);
-        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-
-        User savedUser = userRepository.save(newUser);
-
-        return userMapper.toResponse(savedUser);
+    private UserResponse createUserInternal(UserRegisterRequest request, Role role) {
+        User user = User.builder()
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .DoB(request.getDoB())
+                .gender(request.getGender())
+                .phoneNumber(request.getPhoneNumber())
+                .email(request.getEmail())
+                .role(role)
+                .build();
+        userRepository.save(user);
+        return userMapper.toResponse(user);
     }
-
 
     public void deleteUser(Long id) {
         Optional<User> userOptional = userRepository.findById(id);
@@ -74,17 +77,8 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    public boolean isCurrentUserAdmin() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getAuthorities().stream()
-                .anyMatch(grantedAuthority -> grantedAuthority.getAuthority().equals(Role.ROLE_ADMIN.name()));
-    }
-
     public UserResponse createUserAsAdmin(UserRequest request) {
-        // Nếu không gửi role, mặc định là USER
         Role roleToAssign = request.getRole() != null ? request.getRole() : Role.ROLE_USER;
-
-        // Sử dụng mapper overload để truyền role chính xác
         User newUser = userMapper.toEntity(request, roleToAssign);
 
         User savedUser = userRepository.save(newUser);
