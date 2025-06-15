@@ -1,14 +1,17 @@
 package com.datnt.moviebooker.entity;
 
+import com.datnt.moviebooker.constant.Gender;
 import com.datnt.moviebooker.constant.Role;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.sql.Timestamp;
+import java.util.Date;
 
 @Entity
 @Table(name = "users")
@@ -18,7 +21,8 @@ import java.sql.Timestamp;
 @Getter
 @Setter
 @ToString
-public class User {
+@EntityListeners(AuditingEntityListener.class)
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,18 +38,27 @@ public class User {
     @Size(min = 8, max = 60, message = "Password must be between 8 and 15 characters")
     private String password;
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(nullable = false, unique = true, length = 100)
     @NotNull(message = "Email can not null")
     @Size(min = 5, max = 100, message = "Email must be between 5 and 100 characters")
     @Email(message = "Email invalid")
     private String email;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Role can not null")
     private Role role;
 
-    @Column(nullable = false, updatable = false)
-    @CreatedDate
-    private Timestamp createdAt;
+    @Temporal(TemporalType.DATE)
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private Date DoB;
+
+    @NotNull(message = "Gender cannot be null")
+    private Gender gender;
+
+    @NotNull(message = "Phone number cannot be null")
+    @Pattern(
+            regexp = "^(0[1-9][0-9]{8})$",
+            message = "Phone number must be 10 digits and start with 0"
+    )
+    private String phoneNumber;
 }
