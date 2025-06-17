@@ -2,16 +2,18 @@ package com.datnt.moviebooker.mapper;
 
 import com.datnt.moviebooker.dto.TheaterRequest;
 import com.datnt.moviebooker.dto.TheaterResponse;
+import com.datnt.moviebooker.entity.Region;
 import com.datnt.moviebooker.entity.Theater;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TheaterMapper {
 
-    public Theater toEntity(TheaterRequest request) {
+    public Theater toEntity(TheaterRequest request, Region region) {
         return Theater.builder()
                 .name(request.getName())
-                .location(request.getLocation())
+                .address(request.getAddress()) // đổi location → address
+                .region(region)                // bổ sung region
                 .build();
     }
 
@@ -19,12 +21,13 @@ public class TheaterMapper {
         return TheaterResponse.builder()
                 .id(theater.getId())
                 .name(theater.getName())
-                .location(theater.getLocation())
+                .address(theater.getAddress())
+                .regionName(theater.getRegion().getName())
                 .build();
     }
 
     public void updateEntity(Theater theater, TheaterRequest request) {
         theater.setName(request.getName());
-        theater.setLocation(request.getLocation());
+        theater.setAddress(request.getAddress());
     }
 }

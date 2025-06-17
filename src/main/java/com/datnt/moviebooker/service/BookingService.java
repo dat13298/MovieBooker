@@ -1,5 +1,6 @@
 package com.datnt.moviebooker.service;
 
+import com.datnt.moviebooker.constant.SeatStatus;
 import com.datnt.moviebooker.constant.Status;
 import com.datnt.moviebooker.dto.BookingResponse;
 import com.datnt.moviebooker.entity.*;
@@ -48,7 +49,6 @@ public class BookingService {
                 .user(user)
                 .showTime(showTime)
                 .status(Status.PENDING)
-                .createdAt(new Timestamp(System.currentTimeMillis()))
                 .build();
         booking = bookingRepository.save(booking);// save Booking
 
@@ -91,12 +91,46 @@ public class BookingService {
         bookingRepository.delete(booking);
     }
 
+    public Booking createPendingBooking(Long showTimeId, List<Long> seatIds, Long userId) {
+        ShowTime showTime = showTimeService.findEntityById(showTimeId);
+        User user = userService.findById(userId);
+        List<Seat> seats = seatRepository.findAllById(seatIds);
+
+        long total = seats.stream()
+                .mapToLong(Seat::getPrice)
+                .sum();
+
+        Booking booking = Booking.builder()
+                .user(user)
+                .showTime(showTime)
+                .status(Status.PENDING)
+                .totalAmount(total)
+                .build();
+
+        return bookingRepository.save(booking);
+    }
+
+    @Transactional
+    public void confirmBookingAndSaveSeats(Long bookingId, Long showTimeId, List<Long> seatIds) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        booking.setStatus(Status.CONFIRMED);
+        bookingRepository.save(booking);
+
+        for (Long seatId : seatIds) {
+            Seat seat = seatRepository.findById(seatId).orElseThrow();
+            seat.setStatus(SeatStatus.BOOKED);
+            seatRepository.save(seat);
+            // Save BookingSeat
+            BookingSeat bs = new BookingSeat(null, booking, seat);
+            bookingSeatRepository.save(bs);
+        }
+    }
 
     public Page<BookingResponse> getBookingsByUser(Long userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return bookingRepository.findByUser_Id(userId, pageable)
                 .map(bookingMapper::toResponse);
     }
-
-
 }

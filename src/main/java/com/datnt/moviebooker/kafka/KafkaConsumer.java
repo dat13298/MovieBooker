@@ -32,10 +32,17 @@ public class KafkaConsumer {
             String bookingId = bookingMessage.getBookingId();
 
             // process booking and save to database
-            bookingService.processBooking(
+//            bookingService.processBooking(
+//                    bookingMessage.getShowTimeId(),
+//                    bookingMessage.getSeatIds(),
+//                    bookingMessage.getUserId()
+//            );
+
+            // Confirm booking and save seats
+            bookingService.confirmBookingAndSaveSeats(
+                    Long.parseLong(bookingMessage.getBookingId()),
                     bookingMessage.getShowTimeId(),
-                    bookingMessage.getSeatIds(),
-                    bookingMessage.getUserId()
+                    bookingMessage.getSeatIds()
             );
 
             // remove seat lock from Redis
@@ -46,7 +53,7 @@ public class KafkaConsumer {
             redisService.saveData(bookingId, "CONFIRMED", 60, TimeUnit.SECONDS);
 
             // Notify booking status to WebSocket
-            webSocketService.sendBookingStatus(bookingId, "CONFIRMED");
+//            webSocketService.sendBookingStatus(bookingId, "CONFIRMED");
 
         } catch (Exception e) {
             redisService.saveData(message, "FAILED: " + e.getMessage(), 60, TimeUnit.SECONDS);

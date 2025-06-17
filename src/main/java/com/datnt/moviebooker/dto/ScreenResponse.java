@@ -10,5 +10,6 @@ import lombok.*;
 public class ScreenResponse {
     private Long id;
     private String name;
-    private Long theaterId;
+    private String theaterName;
+
 }

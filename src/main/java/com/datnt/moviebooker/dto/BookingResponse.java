@@ -1,7 +1,7 @@
 package com.datnt.moviebooker.dto;
 
 import com.datnt.moviebooker.constant.Status;
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record BookingResponse(
@@ -9,6 +9,6 @@ public record BookingResponse(
         Long userId,
         Long showTimeId,
         Status status,
-        Timestamp createdAt,
+        LocalDateTime createdAt,
         List<BookingSeatResponse> seats
 ) {}

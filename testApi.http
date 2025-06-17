@@ -7,11 +7,11 @@ POST http://localhost:8080/api/users/register
 Content-Type: application/json
 
 {
-  "username": "dat132",
+  "username": "user123",
   "password": "Abc@12345",
-  "email": "dat132@example.com",
+  "email": "user123@example.com",
   "gender": "MALE",
-  "phoneNumber": "0909999999",
+  "phoneNumber": "0909999998",
   "DoB": "2000-01-01"
 }
 

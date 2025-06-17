@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -18,7 +19,8 @@ import java.util.List;
 @Getter
 @Setter
 @ToString
-public class Booking {
+@EntityListeners(AuditingEntityListener.class)
+public class Booking extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,11 +40,12 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @CreatedDate
-    private Timestamp createdAt;
-
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<BookingSeat> bookingSeats = new ArrayList<>();
 
+    @Column(name = "txn_number")
+    private String txnNumber;
+
+    @Column(name = "total_amount", nullable = false, updatable = false)
+    private Long totalAmount;
 }

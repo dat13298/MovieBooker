@@ -21,9 +21,13 @@ public class UserMapper {
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getRole()
+                user.getRole(),
+                user.getPhoneNumber(),
+                user.getDoB(),
+                user.getGender()
         );
     }
+
 
     public User toEntity(UserRegisterRequest request, Role role) {
         return User.builder()

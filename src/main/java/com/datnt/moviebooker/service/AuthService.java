@@ -37,7 +37,7 @@ public class AuthService {
         String accessToken = jwtService.generateToken(user.getUsername(), user.getRole().toString());
         var refreshToken = refreshTokenService.createRefreshToken(user);
 
-        return new AuthResponse(accessToken, refreshToken.getToken(), user.getUsername(), user.getRole().toString());
+        return new AuthResponse(accessToken, refreshToken.getToken(), user.getUsername(), user.getEmail(), user.getPhoneNumber(), user.getRole().toString());
     }
 
     // Refresh access token with refresh token

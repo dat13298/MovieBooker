@@ -11,7 +11,10 @@ public class TheaterRequest {
     @Size(min = 5, max = 50, message = "Name must be between 5 and 50 characters")
     private String name;
 
-    @NotNull(message = "Location cannot be null")
-    @Size(min = 5, max = 50, message = "Location must be between 5 and 50 characters")
-    private String location;
+    @NotNull(message = "Address cannot be null")
+    @Size(min = 5, max = 50, message = "Address must be between 5 and 50 characters")
+    private String address;
+
+    @NotNull
+    private Long regionId;
 }

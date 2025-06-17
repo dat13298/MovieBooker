@@ -1,12 +1,11 @@
 package com.datnt.moviebooker.dto;
 
-import java.math.BigDecimal;
 import java.sql.Timestamp;
 
 public record ShowTimeResponse(
         Long id,
-        Long movieId,
+        MovieResponse movie,
         Long screenId,
         Timestamp startTime,
-        BigDecimal price
+        String presentation
 ) {}

@@ -40,3 +40,9 @@ logging:
   level:
     org.springframework.security: DEBUG
     org.springframework.data.redis: DEBUG
+
+vnpay:
+  tmn-code: 821OXYAI
+  hash-secret: 2H8FEXIAL5T4CZG2DR3P48CJL5K1NNH9
+  pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:5173/vnpay-return

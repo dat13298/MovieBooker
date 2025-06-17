@@ -2,8 +2,10 @@ package com.datnt.moviebooker.service;
 
 import com.datnt.moviebooker.dto.TheaterRequest;
 import com.datnt.moviebooker.dto.TheaterResponse;
+import com.datnt.moviebooker.entity.Region;
 import com.datnt.moviebooker.entity.Theater;
 import com.datnt.moviebooker.mapper.TheaterMapper;
+import com.datnt.moviebooker.repository.RegionRepository;
 import com.datnt.moviebooker.repository.TheaterRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class TheaterService {
     private static final Logger logger = LoggerFactory.getLogger(TheaterService.class);
 
     private final TheaterRepository theaterRepository;
+    private final RegionRepository regionRepository;
     private final TheaterMapper theaterMapper;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
@@ -92,12 +95,16 @@ public class TheaterService {
     }
 
     public TheaterResponse createTheater(TheaterRequest theaterRequest) {
-        Theater theater = theaterMapper.toEntity(theaterRequest);
+        Region region = regionRepository.findById(theaterRequest.getRegionId())
+                .orElseThrow(() -> new RuntimeException("Region not found"));
+
+        Theater theater = theaterMapper.toEntity(theaterRequest, region);
         Theater savedTheater = theaterRepository.save(theater);
         TheaterResponse response = theaterMapper.toResponse(savedTheater);
         updateTheaterCache(response);
         return response;
     }
+
 
     public TheaterResponse updateTheater(Long id, TheaterRequest theaterRequest) {
         return theaterRepository.findById(id).map(theater -> {

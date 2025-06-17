@@ -3,6 +3,7 @@ package com.datnt.moviebooker.controller;
 import com.datnt.moviebooker.dto.BookingMessage;
 import com.datnt.moviebooker.dto.BookingRequest;
 import com.datnt.moviebooker.dto.BookingResponse;
+import com.datnt.moviebooker.entity.Booking;
 import com.datnt.moviebooker.kafka.KafkaProducer;
 import com.datnt.moviebooker.service.*;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,6 +39,8 @@ public class BookingController {
             }
         }
 
+        Booking booking = bookingService.createPendingBooking(request.showTimeId(), request.seatIds(), userId);
+
         // create message and send to Kafka
         BookingMessage message = new BookingMessage();
         message.setBookingId(bookingId);
@@ -45,7 +50,11 @@ public class BookingController {
 
         kafkaProducer.sendBookingMessage(message);
 
-        return ResponseEntity.ok(bookingId);
+        // Trả về bookingId và totalAmount để gọi API VNPAY redirect
+        return ResponseEntity.ok(Map.of(
+                "bookingId", booking.getId(),
+                "amount", booking.getTotalAmount()
+        ));
     }
 
     @GetMapping("/{id}")

@@ -1,11 +1,12 @@
 package com.datnt.moviebooker.dto;
 
+import com.datnt.moviebooker.constant.Gender;
 import com.datnt.moviebooker.constant.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.sql.Timestamp;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -15,5 +16,7 @@ public class UserResponse {
     private String username;
     private String email;
     private Role role;
-//    private Timestamp createdAt;
+    private String phoneNumber;
+    private Date DoB;
+    private Gender gender;
 }

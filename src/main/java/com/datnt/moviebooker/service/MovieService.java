@@ -86,7 +86,7 @@ public class MovieService {
 
             // 2. Tạo entity Movie
             Movie movie = Movie.builder()
-                    .title(movieRequest.getTitle())
+                    .movieName(movieRequest.getTitle())
                     .description(movieRequest.getDescription())
                     .duration(movieRequest.getDuration())
                     .rating(movieRequest.getRating())
@@ -117,7 +117,7 @@ public class MovieService {
                 String newImageUrl = cloudinaryService.uploadImage(movieRequest.getImage());
                 movie.setImageUrl(newImageUrl);
             }
-            movie.setTitle(movieRequest.getTitle());
+            movie.setMovieName(movieRequest.getTitle());
             movie.setDescription(movieRequest.getDescription());
             movie.setDuration(movieRequest.getDuration());
             movie.setRating(movieRequest.getRating());

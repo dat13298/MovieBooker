@@ -4,33 +4,29 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.sql.Timestamp;
-import java.time.Instant;
-
 @Entity
-@Table(name = "refresh_tokens")
+@Table(name = "food_booking")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
 @Getter
 @Setter
 @EntityListeners(AuditingEntityListener.class)
-public class RefreshToken extends BaseEntity {
+public class FoodBooking extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @JoinColumn(name = "food_service_id", nullable = false)
+    private FoodService foodServiceId;
 
-    private String token;
+    @ManyToOne
+    @JoinColumn(name = "booking_id", nullable = false)
+    private Booking bookingId;
 
-    private Timestamp expiresAt;
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity;
 
-
-    public boolean isExpired() {
-        return expiresAt.before(Timestamp.from(Instant.now()));
-    }
 }

@@ -95,7 +95,7 @@ public class ShowTimeService {
             showTime.setMovie(movie);
             showTime.setScreen(screen);
             showTime.setStartTime(request.startTime());
-            showTime.setPrice(request.price());
+            showTime.setPresentation(request.presentation());
 
             ShowTime updatedShowTime = showTimeRepository.save(showTime);
 

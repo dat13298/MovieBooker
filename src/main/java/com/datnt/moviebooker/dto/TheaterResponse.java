@@ -8,5 +8,6 @@ import lombok.Data;
 public class TheaterResponse {
     private Long id;
     private String name;
-    private String location;
+    private String address;
+    private String regionName;
 }

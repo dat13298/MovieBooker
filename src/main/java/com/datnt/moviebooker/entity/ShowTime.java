@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
@@ -16,7 +17,8 @@ import java.sql.Timestamp;
 @Getter
 @Setter
 @ToString
-public class ShowTime {
+@EntityListeners(AuditingEntityListener.class)
+public class ShowTime extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,8 +38,11 @@ public class ShowTime {
     @NotNull(message = "Start Time can not null")
     private Timestamp startTime;
 
-    @Column(nullable = false)
+    @Column(name = "end_time", nullable = false)
+    @NotNull(message = "End Time can not null")
+    private Timestamp endTime;
+
+    @Column(name = "presentation", nullable = false)
     @NotNull(message = "Price can not null")
-    @Min(value = 0)
-    private BigDecimal price;
+    private String presentation;
 }

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import com.datnt.moviebooker.entity.Region;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @AllArgsConstructor
@@ -13,7 +15,8 @@ import lombok.*;
 @Setter
 @ToString
 @Table(name = "theaters")
-public class Theater {
+@EntityListeners(AuditingEntityListener.class)
+public class Theater extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +28,12 @@ public class Theater {
     private String name;
 
     @Column(nullable = false, unique = true, length = 50)
-    @NotNull(message = "Location can not null")
-    @Size(max = 50, min = 5, message = "Location must be between 5 and 50 characters")
-    private String location;
+    @NotNull(message = "Address can not null")
+    @Size(max = 50, min = 5, message = "Address must be between 5 and 50 characters")
+    private String address;
+
+    @ManyToOne
+    @JoinColumn(name = "region_id", nullable = false)
+    @NotNull(message = "Region can not null")
+    private Region region;
 }

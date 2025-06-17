@@ -19,7 +19,7 @@ public class ScreenMapper {
         return ScreenResponse.builder()
                 .id(screen.getId())
                 .name(screen.getName())
-                .theaterId(screen.getTheater().getId())
+                .theaterName(screen.getTheater().getName())
                 .build();
     }
 }
