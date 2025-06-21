@@ -15,4 +15,5 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(@NotNull(message = "Username can not null") @Size(max = 50, min = 5, message = "Username must be between 5 and 50 characters") String username);
     Page<User> findUsersByRole(@NotNull(message = "Role can not null") Role role, Pageable pageable);
+    Optional<User> findByEmail(@NotNull(message = "Email can not null") @Size(max = 100, min = 5, message = "Email must be between 5 and 100 characters") String email);
 }

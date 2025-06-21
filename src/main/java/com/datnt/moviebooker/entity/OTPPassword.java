@@ -10,32 +10,34 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "otp_passwords")
-@AllArgsConstructor
-@NoArgsConstructor
+@Data
 @Builder
-@Getter
-@Setter
-@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class OTPPassword extends BaseEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @NotNull
+    @Column(nullable = false)
     private String email;
 
-    @Column(unique = true, name = "otp_code", nullable = false)
+    @Column(name = "otp_code", nullable = false, unique = true)
     private String otpCode;
 
-    @Column(nullable = false, name = "is_used")
+    @Column(name = "id_request_reset_password", nullable = false, unique = true)
+    private String idRequestResetPassword;
+
+    @Column(name = "is_used", nullable = false)
     private boolean isUsed = false;
 
+    @Column(name = "expires_at")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime expiresAt;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 }
