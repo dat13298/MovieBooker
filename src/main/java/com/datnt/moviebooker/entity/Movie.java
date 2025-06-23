@@ -84,4 +84,16 @@ public class Movie extends BaseEntity {
     @NotNull(message = "Screen type can not null")
     @Size(max = 20, min = 1, message = "Screen type must be between 1 and 20 characters")
     private String screenType; // e.g., 2D, 3D, IMAX
+
+    @Column(name = "is_18_plus", nullable = false)
+    @NotNull(message = "Is 18+ can not null")
+    private boolean is18Plus; // true if movie is for 18+ audience, false otherwise
+
+    @Column(nullable = false, name = "movie_code", unique = true)
+    @NotNull(message = "Movie code can not null")
+    private String movieCode;
+
+    @Column(nullable = false)
+    @NotNull(message = "Trailer URL can not be null")
+    private String trailerUrl; // URL to the movie trailer
 }
