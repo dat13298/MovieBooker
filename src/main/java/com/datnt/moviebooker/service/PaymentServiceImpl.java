@@ -2,6 +2,7 @@ package com.datnt.moviebooker.service;
 
 import com.datnt.moviebooker.config.VnPayConfig;
 import com.datnt.moviebooker.constant.PaymentStatus;
+import com.datnt.moviebooker.constant.Status;
 import com.datnt.moviebooker.dto.PaymentRequest;
 import com.datnt.moviebooker.dto.PaymentResponse;
 import com.datnt.moviebooker.entity.Booking;
@@ -17,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -92,6 +94,33 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public String handleVnpayReturn(HttpServletRequest request) {
+        String queryString = request.getQueryString();
+        if (queryString == null) return "No query provided";
+
+        Map<String, String> inputData = Arrays.stream(queryString.split("&"))
+                .map(p -> p.split("=", 2))
+                .filter(arr -> !arr[0].equals("vnp_SecureHash") && !arr[0].equals("vnp_SecureHashType"))
+                .collect(Collectors.toMap(
+                        arr -> arr[0],
+                        arr -> arr.length > 1 ? arr[1] : "",
+                        (a, b) -> a,
+                        TreeMap::new
+                ));
+
+        StringBuilder hashData = new StringBuilder();
+        for (Map.Entry<String, String> entry : inputData.entrySet()) {
+            hashData.append(entry.getKey()).append('=').append(entry.getValue()).append('&');
+        }
+        hashData.setLength(hashData.length() - 1);
+
+        String secureHash = hmacSHA512(vnPayConfig.getHashSecret(), hashData.toString());
+        String receivedHash = request.getParameter("vnp_SecureHash");
+
+        if (!secureHash.equalsIgnoreCase(receivedHash)) {
+            System.out.println("Hash mismatch:\nComputed: " + secureHash + "\nReceived: " + receivedHash + "\nData: " + hashData);
+            return "Payment Failed! Invalid signature. The data is not trustworthy.";
+        }
+
         String vnpTxnRef = request.getParameter("vnp_TxnRef");
         String vnpResponseCode = request.getParameter("vnp_ResponseCode");
         String vnpTransactionNo = request.getParameter("vnp_TransactionNo");
@@ -102,7 +131,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         if ("00".equals(vnpResponseCode)) {
             payment.setStatus(PaymentStatus.SUCCESS);
-            payment.getBooking().setStatus(com.datnt.moviebooker.constant.Status.SUCCESS);
+            payment.getBooking().setStatus(Status.SUCCESS);
         } else {
             payment.setStatus(PaymentStatus.FAILED);
         }
@@ -113,10 +142,8 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setBankCode(bankCode);
         paymentRepository.save(payment);
 
-        webSocketService.sendBookingStatus(
-                payment.getBooking().getId().toString(),
-                payment.getStatus().name()
-        );
+        webSocketService.sendBookingStatus(payment.getBooking().getId().toString(), payment.getStatus().name());
+
         return "Payment " + payment.getStatus();
     }
 
@@ -139,4 +166,30 @@ public class PaymentServiceImpl implements PaymentService {
         }
         return result.toString();
     }
+
+    private boolean isValidVnpayResponse(HttpServletRequest request) {
+        Map<String, String> fields = new HashMap<>();
+        for (Enumeration<String> en = request.getParameterNames(); en.hasMoreElements(); ) {
+            String paramName = en.nextElement();
+            if (paramName.startsWith("vnp_") && !paramName.equals("vnp_SecureHash")) {
+                fields.put(paramName, request.getParameter(paramName));
+            }
+        }
+
+        List<String> sortedKeys = new ArrayList<>(fields.keySet());
+        Collections.sort(sortedKeys);
+
+        StringBuilder hashData = new StringBuilder();
+        for (String key : sortedKeys) {
+            String value = fields.get(key);
+            if (hashData.length() > 0) hashData.append('&');
+            hashData.append(key).append('=').append(value);
+        }
+
+        String secureHash = request.getParameter("vnp_SecureHash");
+        String computedHash = hmacSHA512(vnPayConfig.getHashSecret(), hashData.toString());
+
+        return secureHash != null && secureHash.equalsIgnoreCase(computedHash);
+    }
+
 }
