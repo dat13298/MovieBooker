@@ -31,7 +31,9 @@ public enum ResponseCode {
     SEAT_ALREADY_BOOKED(4009, "Ghế đã được đặt"),
     EMAIL_NOT_MATCH(4010, "Email không khớp với người dùng hiện tại"),
     EMAIL_SENDING_FAILED(4011, "Không thể gửi email"),
-    PASSWORD_RESET_REQUEST_NOT_FOUND(4012, "Không tìm thấy yêu cầu đặt lại mật khẩu");
+    PASSWORD_RESET_REQUEST_NOT_FOUND(4012, "Không tìm thấy yêu cầu đặt lại mật khẩu"),
+    PHONE_ALREADY_EXISTS(4013, "Số điện thoại đã được đăng ký"),
+    USERNAME_ALREADY_EXISTS(4014, "Username đã tồn tại");
 
     private final int code;
     private final String message;
