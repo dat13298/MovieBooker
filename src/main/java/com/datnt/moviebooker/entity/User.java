@@ -14,7 +14,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.util.Date;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = {
+        @UniqueConstraint(name = "UK_user_email", columnNames = "email"),
+        @UniqueConstraint(name = "UK_user_username", columnNames = "username"),
+        @UniqueConstraint(name = "UK_user_phone", columnNames = "phone_number")
+})
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
