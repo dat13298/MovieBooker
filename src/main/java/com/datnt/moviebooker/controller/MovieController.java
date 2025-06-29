@@ -1,12 +1,15 @@
 package com.datnt.moviebooker.controller;
 
+import com.datnt.moviebooker.constant.MovieStatus;
 import com.datnt.moviebooker.dto.MovieRequest;
 import com.datnt.moviebooker.dto.MovieResponse;
 import com.datnt.moviebooker.service.MovieService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,8 +23,16 @@ public class MovieController {
     private final MovieService movieService;
 
     @GetMapping
-    public ResponseEntity<Page<MovieResponse>> findAll(Pageable pageable) {
-        return ResponseEntity.ok(movieService.getAllMovies(pageable));
+    public ResponseEntity<Page<MovieResponse>> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required=false) String keyword,
+            @RequestParam(required=false) String screenType,
+            @RequestParam(required=false) Boolean is18Plus,
+            @RequestParam(required=false) MovieStatus status) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("premiereDate").descending());
+        return ResponseEntity.ok(movieService.getAllMovies(pageable, keyword, screenType, is18Plus, status));
     }
 
     @GetMapping("/{id}")

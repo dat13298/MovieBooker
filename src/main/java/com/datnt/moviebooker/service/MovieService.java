@@ -1,5 +1,6 @@
 package com.datnt.moviebooker.service;
 
+import com.datnt.moviebooker.constant.MovieStatus;
 import com.datnt.moviebooker.dto.MovieRequest;
 import com.datnt.moviebooker.dto.MovieResponse;
 import com.datnt.moviebooker.entity.Movie;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,29 +34,53 @@ public class MovieService {
     private final ObjectMapper objectMapper;
     private final CloudinaryService cloudinaryService;
     private static final String MOVIE_CACHE_KEY = "movies";
+    private static final TypeReference<List<MovieResponse>> MOVIE_LIST_TYPE = new TypeReference<>() {
+    };
+    private static final long MOVIE_CACHE_TTL = 10L;
 
-    public Page<MovieResponse> getAllMovies(Pageable pageable) {
-        String cachedMoviesJson = redisTemplate.opsForValue().get(MOVIE_CACHE_KEY);
+    public Page<MovieResponse> getAllMovies(Pageable pageable,
+                                            String keyword,
+                                            String screenType,
+                                            Boolean is18Plus,
+                                            MovieStatus status) {
 
-        List<MovieResponse> cachedMovies;
-        if (cachedMoviesJson != null) {
-            try {
-                cachedMovies = objectMapper.readValue(cachedMoviesJson, new TypeReference<>() {});
-            } catch (Exception e) {
-                logger.error("Error parsing movie list from cache", e);
-                cachedMovies = List.of();
-            }
-        } else {
-            cachedMovies = movieRepository.findAll().stream()
-                    .map(movieMapper::toResponse)
-                    .toList();
-            try {
-                redisTemplate.opsForValue().set(MOVIE_CACHE_KEY, objectMapper.writeValueAsString(cachedMovies), 10, TimeUnit.MINUTES);
-            } catch (Exception e) {
-                logger.error("Error saving movie list to cache", e);
-            }
+        boolean hasFilter =
+                (keyword != null && !keyword.isBlank()) ||
+                        (screenType != null && !screenType.isBlank()) ||
+                        (is18Plus != null) ||
+                        (status != null);
+
+        if (hasFilter) {
+            return movieRepository
+                    .search(
+                            keyword == null ? "" : keyword.trim(),
+                            status,
+                            screenType,
+                            is18Plus,
+                            pageable)
+                    .map(movieMapper::toResponse);
         }
-        return paginateList(cachedMovies, pageable);
+
+        String json = redisTemplate.opsForValue().get(MOVIE_CACHE_KEY);
+        List<MovieResponse> list;
+        try {
+            if (json != null) {
+                list = objectMapper.readValue(json, MOVIE_LIST_TYPE);
+            } else {
+                list = movieRepository.findAll()
+                        .stream().map(movieMapper::toResponse).toList();
+                redisTemplate.opsForValue().set(
+                        MOVIE_CACHE_KEY,
+                        objectMapper.writeValueAsString(list),
+                        MOVIE_CACHE_TTL, TimeUnit.MINUTES);
+            }
+        } catch (IOException e) {
+            logger.error("Error (de)serializing movie cache", e);
+            list = movieRepository.findAll()
+                    .stream().map(movieMapper::toResponse).toList();
+        }
+
+        return paginateList(list, pageable);
     }
 
 
@@ -63,7 +89,8 @@ public class MovieService {
 
         if (cachedMoviesJson != null) {
             try {
-                List<MovieResponse> movies = objectMapper.readValue(cachedMoviesJson, new TypeReference<>() {});
+                List<MovieResponse> movies = objectMapper.readValue(cachedMoviesJson, new TypeReference<>() {
+                });
                 return movies.stream().filter(m -> m.getId().equals(id)).findFirst();
             } catch (Exception e) {
                 logger.error("Error parsing movie from cache", e);
