@@ -10,8 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/movies")
@@ -33,15 +33,18 @@ public class MovieController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Validated(MovieRequest.Create.class)
     public ResponseEntity<MovieResponse> createMovie(@Valid @ModelAttribute MovieRequest movieRequest) {
         return ResponseEntity.ok(movieService.createMovie(movieRequest));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}")
-    public ResponseEntity<MovieResponse> updateMovie(@PathVariable("id") Long id, @Valid @RequestBody MovieRequest movieRequest) {
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Validated(MovieRequest.Update.class)
+    public ResponseEntity<MovieResponse> updateMovie(@PathVariable Long id, @Valid @ModelAttribute MovieRequest movieRequest) {
         return ResponseEntity.ok(movieService.updateMovie(id, movieRequest));
     }
+
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")

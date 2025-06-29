@@ -1,10 +1,12 @@
 package com.datnt.moviebooker.dto;
 
 import com.datnt.moviebooker.constant.MovieStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.Date;
 
 @Data
 @Builder
@@ -22,4 +24,11 @@ public class MovieResponse {
     private LocalDate premiereDate;
     private MovieStatus movieStatus;
     private String screenType;
+
+    @JsonProperty("is18Plus")
+    private boolean eighteenPlus;
+
+    private String movieCode;
+    private String trailerUrl;
+    private Date releaseDate;
 }

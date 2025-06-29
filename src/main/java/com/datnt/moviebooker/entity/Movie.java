@@ -37,7 +37,7 @@ public class Movie extends BaseEntity {
 
     @Column(nullable = false, length = 10)
     @NotNull(message = "Rating can not null")
-    @Size(min = 5, max = 10, message = "Title must be between 5 and 10 characters")
+    @Size(min = 1, max = 5, message = "Rating must be between 1 and 5 characters")
     private String rating;
 
     @Lob
@@ -87,7 +87,7 @@ public class Movie extends BaseEntity {
 
     @Column(name = "is_18_plus", nullable = false)
     @NotNull(message = "Is 18+ can not null")
-    private boolean is18Plus; // true if movie is for 18+ audience, false otherwise
+    private boolean eighteenPlus; // true if movie is for 18+ audience, false otherwise
 
     @Column(nullable = false, name = "movie_code", unique = true)
     @NotNull(message = "Movie code can not null")

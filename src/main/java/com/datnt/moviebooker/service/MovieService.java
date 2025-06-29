@@ -85,20 +85,14 @@ public class MovieService {
             publicId = uploadResult.get("publicId");
 
             // 2. Tạo entity Movie
-            Movie movie = Movie.builder()
-                    .movieName(movieRequest.getTitle())
-                    .description(movieRequest.getDescription())
-                    .duration(movieRequest.getDuration())
-                    .rating(movieRequest.getRating())
-                    .releaseDate(movieRequest.getReleaseDate())
-                    .imageUrl(imageUrl)
-                    .build();
+            Movie movie = movieMapper.toEntity(movieRequest);
+            movie.setImageUrl(imageUrl);
 
             // 3. Lưu vào DB (có thể ném lỗi)
             movieRepository.save(movie);
 
             MovieResponse response = movieMapper.toResponse(movie);
-            updateMovieCache(response);
+            evictMovieCache(response);
             return response;
 
         } catch (Exception e) {
@@ -111,36 +105,32 @@ public class MovieService {
     }
 
 
-    public MovieResponse updateMovie(Long id, MovieRequest movieRequest) {
+    public MovieResponse updateMovie(Long id, MovieRequest req) {
         return movieRepository.findById(id).map(movie -> {
-            if (movieRequest.getImage() != null) {
-                String newImageUrl = cloudinaryService.uploadImage(movieRequest.getImage());
-                movie.setImageUrl(newImageUrl);
+
+            if (req.getImage() != null) {
+                String url = cloudinaryService.uploadImage(req.getImage());
+                movie.setImageUrl(url);
             }
-            movie.setMovieName(movieRequest.getTitle());
-            movie.setDescription(movieRequest.getDescription());
-            movie.setDuration(movieRequest.getDuration());
-            movie.setRating(movieRequest.getRating());
-            movie.setReleaseDate(movieRequest.getReleaseDate());
+
+            movieMapper.updateEntity(movie, req);
 
             movieRepository.save(movie);
-            MovieResponse response = movieMapper.toResponse(movie);
+            MovieResponse res = movieMapper.toResponse(movie);
+            evictMovieCache(res);
+            return res;
 
-            updateMovieCache(response);
-            return response;
         }).orElseThrow(() -> new RuntimeException("Movie not found"));
     }
 
     public void deleteMovie(Long id) {
         movieRepository.deleteById(id);
-        redisTemplate.opsForHash().delete(MOVIE_CACHE_KEY, id.toString());
         invalidateMovieCache();
     }
 
 
-    private void updateMovieCache(MovieResponse movie) {
+    private void evictMovieCache(MovieResponse movie) {
         try {
-            redisTemplate.opsForHash().put(MOVIE_CACHE_KEY, movie.getId().toString(), objectMapper.writeValueAsString(movie));
             invalidateMovieCache();
         } catch (Exception e) {
             logger.error("Error saving movie to cache", e);

@@ -15,6 +15,10 @@ import java.util.Date;
 
 @Data
 public class MovieRequest {
+
+    public interface Create {}
+    public interface Update {}
+
     @NotBlank @Size(max = 255)
     private String title;
 
@@ -53,6 +57,15 @@ public class MovieRequest {
     @NotBlank
     private String screenType;
 
-    @NotNull
+    @NotNull(groups = Create.class)
     private MultipartFile image;
+
+    @NotBlank
+    private String movieCode;
+
+    @NotBlank
+    private String trailerUrl;
+
+    @NotNull
+    private Boolean is18Plus;
 }
