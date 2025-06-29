@@ -59,9 +59,9 @@ logs/
 Thumbs.db
 
 # ---- Environment / secrets ----
-
 .env
-.env.\*
+.env.local
+.env.*.local
 
 # ---- Misc ----
 
