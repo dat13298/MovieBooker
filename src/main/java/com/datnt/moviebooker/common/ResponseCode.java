@@ -33,14 +33,28 @@ public enum ResponseCode {
     EMAIL_SENDING_FAILED(4011, "Không thể gửi email"),
     PASSWORD_RESET_REQUEST_NOT_FOUND(4012, "Không tìm thấy yêu cầu đặt lại mật khẩu"),
     PHONE_ALREADY_EXISTS(4013, "Số điện thoại đã được đăng ký"),
-    USERNAME_ALREADY_EXISTS(4014, "Username đã tồn tại");
+    USERNAME_ALREADY_EXISTS(4014, "Username đã tồn tại"),
+
+    //Point
+    POINT_NOT_ENOUGH(5001, "Điểm không đủ để đổi quà"),
+
+    //Redeem Voucher
+    REDEEM_VOUCHER_FAILED(5002, "Đổi voucher thất bại"),
+    EVOUCHER_NOT_FOUND(5003,"Không tìm thấy Evoucher" ),
+    EVOUCHER_ALREADY_USED(5004, "Evoucher đã được sử dụng"),
+    EVOUCHER_EXPIRED(5005, "Evoucher đã hết hạn"),
+
+    // Evoucher Transaction
+    EVOUCHER_TRANSACTION_NOT_FOUND(5006, "Không tìm thấy lịch sử giao dịch Evoucher");
 
     private final int code;
     private final String message;
+    private final String name;
 
     ResponseCode(int code, String message) {
         this.code = code;
         this.message = message;
+        this.name = this.name();
     }
 
     public int getCode() {
@@ -49,5 +63,9 @@ public enum ResponseCode {
 
     public String getMessage() {
         return message;
+    }
+
+    public String getName() {
+        return name;
     }
 }

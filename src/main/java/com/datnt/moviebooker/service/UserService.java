@@ -22,6 +22,7 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PointService pointService;
 
     public Page<UserResponse> getAllUsers(Pageable pageable) {
         Page<User> users = userRepository.findAll(pageable);
@@ -97,6 +98,7 @@ public class UserService {
     private UserResponse createUserInternal(UserRegisterRequest request, Role role) {
         User user = userMapper.toEntity(request, role);
         userRepository.save(user);
+        pointService.create(user); // Tao ban ghi diem cho user moi
         return userMapper.toResponse(user);
     }
 
