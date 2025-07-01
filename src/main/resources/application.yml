@@ -54,3 +54,13 @@ vnpay:
   hash-secret: ${VNP_HASH}
   pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
   return-url: http://localhost:5173/vnpay-return
+logging:
+  level:
+    org.springframework.web.socket.server: DEBUG
+    org.springframework.web.socket.handler: DEBUG
+    org.springframework.web.socket.config: DEBUG
+    org.springframework.messaging.simp: DEBUG
+    org.springframework.messaging.simp.user: DEBUG
+    org.springframework.messaging.simp.stomp: DEBUG
+gotit:
+  authorization-key: ${GOTIT_AUTHORIZATION_KEY}
