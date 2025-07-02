@@ -67,7 +67,10 @@ public class JwtSecurityConfig {
                                 "/v3/api-docs/**",
                                 "/webjars/**",
                                 "/swagger-config/**",
-                                "/error"
+                                "/error",
+                                "/ws/**",
+                                "/topic/**",
+                                "/app/**"
                         ).permitAll()
                         .requestMatchers("/api/payment/vnpay-return").permitAll()//vnpay return
                         .requestMatchers(HttpMethod.GET, "/api/movies/**").permitAll()
