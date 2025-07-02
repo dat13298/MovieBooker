@@ -57,7 +57,7 @@ public class KafkaConsumer {
 
         } catch (Exception e) {
             redisService.saveData(message, "FAILED: " + e.getMessage(), 60, TimeUnit.SECONDS);
-            webSocketService.sendBookingStatus(message, "FAILED");
+//            webSocketService.sendBookingStatus(message, "FAILED");
         }
     }
 }

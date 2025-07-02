@@ -6,6 +6,7 @@ import com.datnt.moviebooker.dto.RefreshTokenRequest;
 import com.datnt.moviebooker.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,5 +26,11 @@ public class AuthController {
     public ResponseEntity<String> refreshToken(@RequestHeader("X-Refresh-Token") String refreshToken) {
         var newAccessToken = authService.refreshAccessToken(refreshToken);
         return ResponseEntity.ok(newAccessToken);
+    }
+
+    @GetMapping("/ping")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("ok");
     }
 }

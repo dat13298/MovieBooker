@@ -148,7 +148,8 @@ public class PaymentServiceImpl implements PaymentService {
         payment.setBankCode(bankCode);
         paymentRepository.save(payment);
 
-        webSocketService.sendBookingStatus(payment.getBooking().getId().toString(), payment.getStatus().name());
+        webSocketService.sendBookingStatus(payment.getBooking().getId(),
+                payment.getStatus().name());
         // Tích điểm cho người dùng để đổi voucher
         if (payment.getStatus() == PaymentStatus.SUCCESS) {
             var point = pointService.findByUserId(payment.getBooking().getUser().getId());
@@ -161,7 +162,7 @@ public class PaymentServiceImpl implements PaymentService {
 
                     EvoucherTransaction evoucherTransaction = EvoucherTransaction.builder()
                             .user(payment.getBooking().getUser())
-                            .evoucher(null) // Evoucher is null here, but you can set it if needed
+                            .evoucher(null)
                             .description("Tích điểm khi thanh toán thành công với đơn hàng có giá trị " + payment.getAmount() + " VND")
                             .status("SUCCESS")
                             .transactionDate(LocalDateTime.now())
@@ -201,30 +202,4 @@ public class PaymentServiceImpl implements PaymentService {
         }
         return result.toString();
     }
-
-    private boolean isValidVnpayResponse(HttpServletRequest request) {
-        Map<String, String> fields = new HashMap<>();
-        for (Enumeration<String> en = request.getParameterNames(); en.hasMoreElements(); ) {
-            String paramName = en.nextElement();
-            if (paramName.startsWith("vnp_") && !paramName.equals("vnp_SecureHash")) {
-                fields.put(paramName, request.getParameter(paramName));
-            }
-        }
-
-        List<String> sortedKeys = new ArrayList<>(fields.keySet());
-        Collections.sort(sortedKeys);
-
-        StringBuilder hashData = new StringBuilder();
-        for (String key : sortedKeys) {
-            String value = fields.get(key);
-            if (hashData.length() > 0) hashData.append('&');
-            hashData.append(key).append('=').append(value);
-        }
-
-        String secureHash = request.getParameter("vnp_SecureHash");
-        String computedHash = hmacSHA512(vnPayConfig.getHashSecret(), hashData.toString());
-
-        return secureHash != null && secureHash.equalsIgnoreCase(computedHash);
-    }
-
 }

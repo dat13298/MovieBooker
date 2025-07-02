@@ -3,6 +3,8 @@ package com.datnt.moviebooker.controller;
 import com.datnt.moviebooker.dto.LockSeatRequest;
 import com.datnt.moviebooker.dto.SeatRequest;
 import com.datnt.moviebooker.dto.SeatResponse;
+import com.datnt.moviebooker.dto.UnlockSeatRequest;
+import com.datnt.moviebooker.service.AuthService;
 import com.datnt.moviebooker.service.RedisService;
 import com.datnt.moviebooker.service.SeatService;
 import jakarta.validation.Valid;
@@ -21,23 +23,33 @@ import java.util.concurrent.TimeUnit;
 public class SeatController {
     private final RedisService redisService;
     private final SeatService seatService;
+    private final AuthService authService;
 
     @PostMapping("/lock")
-    public ResponseEntity<?> lockSeat(@RequestBody LockSeatRequest request) {
-        // Lock the seat for 5 minutes
-        boolean locked = redisService.tryLockSeat(
-                request.getSeatId(),
-                request.getShowTimeId(),
-                request.getUserId(),
-                5, TimeUnit.MINUTES
-        );
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> lockSeat(@RequestBody LockSeatRequest req) {
+        System.out.println("Locking seat: " + req.getSeatId() + " for show time: " + req.getShowTimeId());
+        Long userId = authService.getCurrentUserId();
 
-        if (locked) {
-            return ResponseEntity.ok("Seat locked successfully");
-        } else {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Seat already locked");
-        }
+        boolean locked = redisService.tryLockSeat(
+                req.getSeatId(),
+                req.getShowTimeId(),
+                userId,
+                30, TimeUnit.SECONDS);
+
+        return locked
+                ? ResponseEntity.ok("Seat locked")
+                : ResponseEntity.status(HttpStatus.CONFLICT)
+                .body("Seat was locked by another user");
     }
+
+    @PostMapping("/unlock")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> unlockSeat(@RequestBody UnlockSeatRequest req) {
+        redisService.releaseSeat(req.getSeatId(), req.getShowTimeId());
+        return ResponseEntity.ok("Seat released");
+    }
+
 
     @GetMapping
     public ResponseEntity<Page<SeatResponse>> getAllSeats(
@@ -45,10 +57,10 @@ public class SeatController {
         return ResponseEntity.ok(seatService.getAllSeats(screenId, pageable));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<SeatResponse> getSeatById(@PathVariable Long id) {
-        return ResponseEntity.ok(seatService.getSeatById(id));
-    }
+//    @GetMapping("/{id}")
+//    public ResponseEntity<SeatResponse> getSeatById(@PathVariable Long id) {
+//        return ResponseEntity.ok(seatService.getSeatById(id));
+//    }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping

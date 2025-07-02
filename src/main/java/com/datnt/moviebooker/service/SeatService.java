@@ -1,110 +1,170 @@
 package com.datnt.moviebooker.service;
 
+import com.datnt.moviebooker.constant.SeatStatus;
 import com.datnt.moviebooker.dto.SeatRequest;
 import com.datnt.moviebooker.dto.SeatResponse;
 import com.datnt.moviebooker.entity.Screen;
 import com.datnt.moviebooker.entity.Seat;
+import com.datnt.moviebooker.entity.ShowTime;
 import com.datnt.moviebooker.mapper.SeatMapper;
 import com.datnt.moviebooker.repository.SeatRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class SeatService {
-    private static final Logger logger = LoggerFactory.getLogger(SeatService.class);
 
-    private final SeatRepository seatRepository;
+    private static final Logger log = LoggerFactory.getLogger(SeatService.class);
+
+    private static final String SCREEN_CACHE = "screen_seats:";
+
+    private static final String ST_CACHE     = "showtime_seats:";
+
+    private final SeatRepository seatRepo;
     private final ScreenService screenService;
-    private final StringRedisTemplate redisTemplate;
-    private final ObjectMapper objectMapper;
+    private final StringRedisTemplate redis;
+    private final ObjectMapper om;
     private final SeatMapper seatMapper;
-    private static final String SEAT_CACHE_PREFIX = "screen_seats:";
+    private final ShowTimeService showTimeService;
 
     public Page<SeatResponse> getAllSeats(Long screenId, Pageable pageable) {
-        String cacheKey = SEAT_CACHE_PREFIX + screenId;
-        String cachedSeats = redisTemplate.opsForValue().get(cacheKey);
 
-        if (cachedSeats != null && !cachedSeats.isEmpty()) {
+        String key        = SCREEN_CACHE + screenId;
+        String cachedJson = redis.opsForValue().get(key);
+
+        List<Seat> seats;
+        if (cachedJson != null) {
             try {
-                List<Seat> seats = objectMapper.readValue(cachedSeats, new TypeReference<List<Seat>>() {});
-                if (!seats.isEmpty()) {
-                    return toPage(seats, pageable);
-                }
-            } catch (Exception e) {
-                logger.error("Error parsing seats from cache, clearing cache...", e);
-                clearSeatCache(screenId);
+                seats = om.readValue(cachedJson, new TypeReference<>() {});
+            } catch (IOException ex) {
+                log.error("Corrupted seat cache – clearing {}", key, ex);
+                redis.delete(key);
+                seats = null;
+            }
+            if (seats != null) {
+                return toPage(seats, pageable);
             }
         }
 
-
-        Page<Seat> seatPage = seatRepository.findSeatsByScreen_Id(screenId, pageable);
+        Page<Seat> page = seatRepo.findSeatsByScreen_Id(screenId, pageable);
         try {
-            redisTemplate.opsForValue().set(cacheKey, objectMapper.writeValueAsString(seatPage.getContent()), 10, TimeUnit.MINUTES);
-        } catch (Exception e) {
-            logger.error("Error caching seats", e);
+            redis.opsForValue().set(
+                    key,
+                    om.writeValueAsString(page.getContent()),
+                    10, TimeUnit.MINUTES);
+        } catch (Exception ex) {
+            log.error("Cache error", ex);
+        }
+        return page.map(seatMapper::toResponse);
+    }
+
+    @Transactional
+    public void updateSeatStatus(Long seatId, SeatStatus status) {
+        seatRepo.findById(seatId).ifPresent(seat -> {
+            seat.setStatus(status);
+            seatRepo.save(seat);
+        });
+    }
+
+    public void clearShowtimeCache(Long showTimeId) {
+        redis.delete(ST_CACHE + showTimeId);
+    }
+
+    public List<SeatResponse> findSeatsByShowTime(Long showTimeId) {
+
+        String key     = ST_CACHE + showTimeId;
+        String json    = redis.opsForValue().get(key);
+        List<SeatResponse> list;
+
+        if (json != null) {
+            try {
+                list = om.readValue(json, new TypeReference<>() {});
+            } catch (IOException e) {
+                log.error("Bad show-time cache – clearing {}", key, e);
+                redis.delete(key);
+                list = null;
+            }
+            if (list != null) {
+                applyLockState(list, showTimeId);
+                return list;
+            }
         }
 
-        return seatPage.map(seatMapper::toResponse);
+        list = seatRepo.findByShowTime_Id(showTimeId)
+                .stream().map(seatMapper::toResponse).toList();
+
+        try {
+            redis.opsForValue().set(
+                    key, om.writeValueAsString(list), 10, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.error("Cache error", e);
+        }
+
+        applyLockState(list, showTimeId);
+        return list;
     }
 
-    // Convert List to Page manually (for cache data)
-    private Page<SeatResponse> toPage(List<Seat> seats, Pageable pageable) {
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), seats.size());
-
-        List<SeatResponse> seatResponses = seats.subList(start, end).stream()
-                .map(seatMapper::toResponse)
-                .toList();
-
-        return new PageImpl<>(seatResponses, pageable, seats.size());
+    private void applyLockState(List<SeatResponse> list, Long showTimeId) {
+        list.forEach(s -> {
+            String lockKey = "seat_lock:" + showTimeId + ":" + s.getId();
+            if (Boolean.TRUE.equals(redis.hasKey(lockKey))) {
+                s.setStatus(SeatStatus.UNAVAILABLE);
+            }
+        });
     }
 
-
-    public SeatResponse createSeat(SeatRequest request) {
-        Screen screen = screenService.getScreenEntityById(request.getScreenId());
-        Seat seat = seatMapper.toEntity(request, screen);
-        Seat savedSeat = seatRepository.save(seat);
+    public SeatResponse createSeat(SeatRequest req) {
+        Screen screen = screenService.getScreenEntityById(req.getScreenId());
+        ShowTime showTime = showTimeService.findEntityById(req.getShowTimeId());
+        Seat saved = seatRepo.save(seatMapper.toEntity(req, screen, showTime));
         clearSeatCache(screen.getId());
-        return seatMapper.toResponse(savedSeat);
+        return seatMapper.toResponse(saved);
     }
 
-
-    public SeatResponse updateSeat(Long id, SeatRequest request) {
-        return seatRepository.findById(id).map(seat -> {
-            Screen screen = screenService.getScreenEntityById(request.getScreenId());
-            seatMapper.updateEntity(seat, request, screen);
-            Seat savedSeat = seatRepository.save(seat);
-            clearSeatCache(screen.getId());
-            return seatMapper.toResponse(savedSeat);
-        }).orElseThrow(() -> new RuntimeException("Seat not found!"));
-    }
-
-    public SeatResponse getSeatById(Long id) {
-        return seatRepository.findById(id)
-                .map(seatMapper::toResponse)
-                .orElseThrow(() -> new RuntimeException("Seat not found!"));
+    public SeatResponse updateSeat(Long id, SeatRequest req) {
+        return seatRepo.findById(id).map(seat -> {
+            Screen sc = screenService.getScreenEntityById(req.getScreenId());
+            ShowTime st = showTimeService.findEntityById(req.getShowTimeId());
+            seatMapper.updateEntity(seat, req, sc, st);
+            Seat saved = seatRepo.save(seat);
+            clearSeatCache(sc.getId());
+            return seatMapper.toResponse(saved);
+        }).orElseThrow(() -> new RuntimeException("Seat not found"));
     }
 
     public void deleteSeat(Long id) {
-        seatRepository.findById(id).ifPresent(seat -> {
-            seatRepository.deleteById(id);
+        seatRepo.findById(id).ifPresent(seat -> {
+            seatRepo.deleteById(id);
             clearSeatCache(seat.getScreen().getId());
         });
     }
 
-    public void clearSeatCache(Long screenId) {
-        redisTemplate.delete(SEAT_CACHE_PREFIX + screenId);
+    private void clearSeatCache(Long screenId) {
+        redis.delete(SCREEN_CACHE + screenId);
+    }
+
+    private Page<SeatResponse> toPage(List<Seat> seats, Pageable p) {
+        int start = (int) p.getOffset();
+        int end   = Math.min(start + p.getPageSize(), seats.size());
+        List<SeatResponse> slice = seats.subList(start, end)
+                .stream().map(seatMapper::toResponse).toList();
+        return new PageImpl<>(slice, p, seats.size());
+    }
+
+    public Seat findSeatById(Long id) {
+        return seatRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Seat not found"));
     }
 }

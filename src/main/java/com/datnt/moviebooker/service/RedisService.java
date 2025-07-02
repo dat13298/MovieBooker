@@ -1,5 +1,7 @@
 package com.datnt.moviebooker.service;
 
+import com.datnt.moviebooker.constant.SeatStatus;
+import com.datnt.moviebooker.entity.Seat;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.connection.Message;
@@ -19,6 +21,7 @@ public class RedisService {
     private final StringRedisTemplate redisTemplate;
     private final RedisMessageListenerContainer redisContainer;
     private final WebSocketService webSocketService;
+    private final SeatService seatService;
 
     public void saveData(String key, String value, long timeout, TimeUnit timeUnit) {
         redisTemplate.opsForValue().set(key, value, timeout, timeUnit);
@@ -28,16 +31,34 @@ public class RedisService {
         return redisTemplate.opsForValue().get(key);
     }
 
-    public boolean tryLockSeat(Long seatId, Long showTimeId, Long userId, long timeout, TimeUnit timeUnit) {
+    public boolean tryLockSeat(Long seatId, Long showTimeId, Long userId,
+                               long timeout, TimeUnit unit) {
+
         String key = "seat_lock:" + showTimeId + ":" + seatId;
-        Boolean success = redisTemplate.opsForValue().setIfAbsent(key, userId.toString(), timeout, timeUnit);
-        return Boolean.TRUE.equals(success); // if success is null, return false
+
+        Boolean ok = redisTemplate.opsForValue()
+                .setIfAbsent(key, userId.toString(), timeout, unit);
+
+        if (Boolean.TRUE.equals(ok)) {
+            seatService.updateSeatStatus(seatId, SeatStatus.UNAVAILABLE);
+            seatService.clearShowtimeCache(showTimeId);
+
+            long expiresAt = System.currentTimeMillis()
+                    + TimeUnit.MILLISECONDS.convert(timeout, unit);
+
+            webSocketService.sendSeatLocked(seatId, showTimeId, userId, expiresAt);
+        }
+        return Boolean.TRUE.equals(ok);
     }
 
     public void releaseSeat(Long seatId, Long showTimeId) {
         String key = "seat_lock:" + showTimeId + ":" + seatId;
-        // delete key to release the seat
-        redisTemplate.delete(key);
+        Boolean existed = redisTemplate.delete(key);
+        if (Boolean.TRUE.equals(existed)) {
+            seatService.updateSeatStatus(seatId, SeatStatus.AVAILABLE);
+            seatService.clearShowtimeCache(showTimeId);
+            webSocketService.sendSeatReleased(seatId, showTimeId);
+        }
     }
 
     @PostConstruct
@@ -60,11 +81,18 @@ public class RedisService {
                                     return;
                                 }
 
-                                Long showTimeId = Long.parseLong(parts[1]);
-                                Long seatId = Long.parseLong(parts[2]);
+                                Long stId = Long.parseLong(parts[1]);
+                                Long sId  = Long.parseLong(parts[2]);
 
-                                // send message to WebSocket
-                                webSocketService.sendSeatReleased(seatId, showTimeId);
+                                // Release the seat if it was not booked
+                                Seat seat = seatService.findSeatById(sId);
+                                if (seat.getStatus() != SeatStatus.BOOKED) {
+                                    seatService.updateSeatStatus(sId, SeatStatus.AVAILABLE);
+                                    seatService.clearShowtimeCache(stId);
+                                    webSocketService.sendSeatReleased(sId, stId);
+                                } else {
+                                    System.out.println("Seat " + sId + " was booked. Skipping auto-release.");
+                                }
                             }
                         } catch (Exception e) {
                             System.err.println("Error processing expired key: " + e.getMessage());

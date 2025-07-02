@@ -3,19 +3,18 @@ package com.datnt.moviebooker.entity;
 import com.datnt.moviebooker.constant.SeatStatus;
 import com.datnt.moviebooker.constant.SeatType;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "seats")
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
+@Table(name = "seats",
+        uniqueConstraints = @UniqueConstraint(
+                columnNames = {"screen_id","row_idx","col_idx"}))
 @Getter
 @Setter
-@ToString
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 public class Seat extends BaseEntity {
 
@@ -23,32 +22,31 @@ public class Seat extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "seat_number", nullable = false, unique = true, length = 5)
-    @NotNull(message = "Seat Number can not null")
-    @Size(max = 5, min = 2, message = "Seat Number must be between 5 and 50 characters")
+    @Column(name = "seat_number", length = 5, nullable = false)
     private String seatNumber;
 
-    @ManyToOne
-    @JoinColumn(name = "screen_id")
-    @NotNull(message = "Screen can not null")
+    @Column(name = "row_idx", nullable = false)
+    private Integer row;
+
+    @Column(name = "col_idx", nullable = false)
+    private Integer col;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "screen_id", nullable = false)
     private Screen screen;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    @NotNull(message = "Seat Status can not null")
-    private SeatStatus status;
-
     @ManyToOne
-    @JoinColumn(name = "show_time_id")
-    @NotNull(message = "Show Time can not null")
+    @JoinColumn(name = "show_time_id", nullable = false)
     private ShowTime showTime;
 
-    @Column(name = "price", nullable = false)
-    @NotNull(message = "Price can not null")
-    private Long price;
-
-    @Column(name = "seat_type", nullable = false)
     @Enumerated(EnumType.STRING)
-    @NotNull(message = "Seat Type can not null")
+    @Column(nullable = false)
+    private SeatStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "seat_type", nullable = false)
     private SeatType seatType;
+
+    @Column(name = "price")
+    private Long price;
 }

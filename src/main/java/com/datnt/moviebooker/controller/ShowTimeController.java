@@ -1,7 +1,9 @@
 package com.datnt.moviebooker.controller;
 
+import com.datnt.moviebooker.dto.SeatResponse;
 import com.datnt.moviebooker.dto.ShowTimeRequest;
 import com.datnt.moviebooker.dto.ShowTimeResponse;
+import com.datnt.moviebooker.service.SeatService;
 import com.datnt.moviebooker.service.ShowTimeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,12 +13,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
-@RequestMapping("/api/showtimes")
+@RequestMapping("/api/show-times")
 @RequiredArgsConstructor
 public class ShowTimeController {
 
     private final ShowTimeService showTimeService;
+    private final SeatService seatService;
 
     @GetMapping
     public ResponseEntity<Page<ShowTimeResponse>> getAllShowTimes(Pageable pageable) {
@@ -46,4 +51,10 @@ public class ShowTimeController {
         showTimeService.deleteShowTime(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}/seats")
+    public ResponseEntity<List<SeatResponse>> getSeatsOfShowTime(@PathVariable Long id) {
+        return ResponseEntity.ok(seatService.findSeatsByShowTime(id));
+    }
+
 }
