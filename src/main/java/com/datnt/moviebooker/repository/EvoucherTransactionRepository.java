@@ -22,4 +22,7 @@ public interface EvoucherTransactionRepository extends JpaRepository<EvoucherTra
             @Param("endDate") LocalDateTime endDate,
             @Param("defaultStartDate") LocalDateTime defaultStartDate
     );
+
+    @Query(value = "SELECT * FROM evoucher_transaction et WHERE et.user_id = :userId", nativeQuery = true)
+    EvoucherTransaction findByUserId(@Param("userId") Long userId);
 }

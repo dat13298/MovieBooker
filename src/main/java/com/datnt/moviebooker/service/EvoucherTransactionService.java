@@ -32,10 +32,28 @@ public class EvoucherTransactionService {
                         .description(transaction.getDescription())
                         .status(transaction.getStatus())
                         .transactionDate(transaction.getTransactionDate())
-                        .pointsUsed(transaction.getPointsUsed())
+                        .pointsUsed(transaction.getPoints())
                         .pointsAfter(transaction.getPointsAfter())
                         .pointsBefore(transaction.getPointsBefore())
                         .build())
                 .collect(Collectors.toList()));
+    }
+
+    public EvoucherTransaction findByUserId(Long userId) {
+        return evoucherTransactionRepository.findByUserId(userId);
+    }
+
+    public void saveEvoucherTransaction(EvoucherTransaction evoucherTransaction) {
+        if (evoucherTransaction == null || evoucherTransaction.getUser() == null || evoucherTransaction.getUser().getId() == null) {
+            throw new BusinessException(ResponseCode.EVOUCHER_TRANSACTION_FAILED);
+        }
+        evoucherTransactionRepository.save(evoucherTransaction);
+    }
+
+    public void createEvoucherTransaction(EvoucherTransaction evoucherTransaction) {
+        if (evoucherTransaction == null || evoucherTransaction.getUser() == null || evoucherTransaction.getUser().getId() == null) {
+            throw new BusinessException(ResponseCode.EVOUCHER_CAN_NOT_CREATE);
+        }
+        evoucherTransactionRepository.save(evoucherTransaction);
     }
 }

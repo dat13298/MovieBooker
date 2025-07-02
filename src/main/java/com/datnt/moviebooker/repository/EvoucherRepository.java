@@ -12,4 +12,10 @@ import java.util.List;
 public interface EvoucherRepository extends JpaRepository<Evoucher, Long> {
     @Query(value = "SELECT * FROM evoucher WHERE created_by = :createdBy ORDER BY created_at DESC", nativeQuery = true)
     List<Evoucher> findByCreatedBy(@Param("createdBy") String createdBy);
+
+    @Query(value = "SELECT * FROM evoucher WHERE created_by = :createdBy AND status = :status ORDER BY created_at DESC", nativeQuery = true)
+    List<Evoucher> findByCreatedByAndStatus(@Param("createdBy") String createdBy, @Param("status") String status);
+
+    @Query(value = "SELECT * FROM evoucher WHERE created_by = :createdBy AND status != :status ORDER BY created_at DESC", nativeQuery = true)
+    List<Evoucher> findByCreatedByAndStatusNot(@Param("createdBy") String createdBy, @Param("status") String status);
 }

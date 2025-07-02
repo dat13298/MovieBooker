@@ -27,12 +27,25 @@ public class EvoucherService {
     private final AuthService authService;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public ApiWrapperResponse<List<GetAllVoucherResponse>> getAllVouchers() {
-        List<Evoucher> evouchers = evoucherRepository.findByCreatedBy(String.valueOf(authService.getCurrentUserId()));
-        if (evouchers.isEmpty()) {
+    public ApiWrapperResponse<List<GetAllVoucherResponse>> getUnusedVouchers() {
+        List<Evoucher> unusedEvouchers = evoucherRepository.findByCreatedByAndStatus(
+                String.valueOf(authService.getCurrentUserId()), String.valueOf(Evoucher.Status.UNUSED));
+        if (unusedEvouchers.isEmpty()) {
             throw new BusinessException(ResponseCode.EVOUCHER_NOT_FOUND);
         }
-        List<GetAllVoucherResponse> response = evouchers.stream()
+        List<GetAllVoucherResponse> response = unusedEvouchers.stream()
+                .map(evoucher -> objectMapper.convertValue(evoucher, GetAllVoucherResponse.class))
+                .collect(Collectors.toList());
+        return ApiWrapperResponse.success(response);
+    }
+
+    public ApiWrapperResponse<List<GetAllVoucherResponse>> getOtherVouchers() {
+        List<Evoucher> otherEvouchers = evoucherRepository.findByCreatedByAndStatusNot(
+                String.valueOf(authService.getCurrentUserId()), String.valueOf(Evoucher.Status.UNUSED));
+        if (otherEvouchers.isEmpty()) {
+            throw new BusinessException(ResponseCode.EVOUCHER_NOT_FOUND);
+        }
+        List<GetAllVoucherResponse> response = otherEvouchers.stream()
                 .map(evoucher -> objectMapper.convertValue(evoucher, GetAllVoucherResponse.class))
                 .collect(Collectors.toList());
         return ApiWrapperResponse.success(response);

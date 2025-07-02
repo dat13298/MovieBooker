@@ -20,17 +20,6 @@ public class EvoucherController {
     private final EvoucherService evoucherService;
 
     /**
-     * Lấy danh sách voucher của người dùng hiện tại
-     * @return Danh sách voucher được bọc trong ApiWrapperResponse
-     */
-    @GetMapping
-    @Operation(summary = "Get all vouchers for current user",
-            description = "Retrieves all vouchers associated with the authenticated user")
-    public ApiWrapperResponse<List<GetAllVoucherResponse>> getAllVouchers() {
-        return evoucherService.getAllVouchers();
-    }
-
-    /**
      * Sử dụng voucher theo ID
      * @param evoucherId ID của voucher cần sử dụng
      * @return Thông tin voucher sau khi sử dụng được bọc trong ApiWrapperResponse
@@ -41,5 +30,27 @@ public class EvoucherController {
     public ApiWrapperResponse<GetVoucherUseResponse> useVoucher(
             @PathVariable Long evoucherId) {
         return evoucherService.useVoucher(evoucherId);
+    }
+
+    /**
+     * Lấy danh sách voucher UNUSED của người dùng hiện tại
+     * @return Danh sách voucher UNUSED được bọc trong ApiWrapperResponse
+     */
+    @GetMapping("/unused")
+    @Operation(summary = "Get UNUSED vouchers for current user",
+            description = "Retrieves UNUSED vouchers associated with the authenticated user")
+    public ApiWrapperResponse<List<GetAllVoucherResponse>> getUnusedVouchers() {
+        return evoucherService.getUnusedVouchers();
+    }
+
+    /**
+     * Lấy danh sách voucher có trạng thái khác UNUSED của người dùng hiện tại
+     * @return Danh sách voucher khác UNUSED được bọc trong ApiWrapperResponse
+     */
+    @GetMapping("/others")
+    @Operation(summary = "Get other vouchers for current user",
+            description = "Retrieves vouchers with statuses other than UNUSED associated with the authenticated user")
+    public ApiWrapperResponse<List<GetAllVoucherResponse>> getOtherVouchers() {
+        return evoucherService.getOtherVouchers();
     }
 }
