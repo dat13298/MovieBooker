@@ -1,12 +1,19 @@
 package com.datnt.moviebooker.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "evoucher_transaction")
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class EvoucherTransaction {
     @Id
     @Column(length = 36)
@@ -30,8 +37,8 @@ public class EvoucherTransaction {
     @JoinColumn(name = "evoucher_id", referencedColumnName = "id")
     private Evoucher evoucher;
 
-    @Column(name = "points_used", nullable = false)
-    private int pointsUsed;
+    @Column(name = "points", nullable = false)
+    private int points;
 
     @Column(name = "points_after", nullable = false)
     private int pointsAfter;
@@ -39,4 +46,12 @@ public class EvoucherTransaction {
     @Column(name = "points_before", nullable = false)
     private int pointsBefore;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transaction_type", nullable = false, length = 20)
+    private TransactionType transactionType;
+
+    public enum TransactionType {
+        REDEEM, // Redeem evoucher
+        EARN // Refund evoucher
+    }
 }

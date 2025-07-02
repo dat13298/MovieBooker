@@ -45,7 +45,9 @@ public enum ResponseCode {
     EVOUCHER_EXPIRED(5005, "Evoucher đã hết hạn"),
 
     // Evoucher Transaction
-    EVOUCHER_TRANSACTION_NOT_FOUND(5006, "Không tìm thấy lịch sử giao dịch Evoucher");
+    EVOUCHER_TRANSACTION_NOT_FOUND(5006, "Không tìm thấy lịch sử giao dịch Evoucher"),
+    EVOUCHER_TRANSACTION_FAILED(5007, "Giao dịch Evoucher Transaction thất bại"),
+    EVOUCHER_CAN_NOT_CREATE(5008, "Có lỗi khi tạo Evoucher Transaction"),;
 
     private final int code;
     private final String message;

@@ -6,11 +6,14 @@ import com.datnt.moviebooker.constant.Status;
 import com.datnt.moviebooker.dto.PaymentRequest;
 import com.datnt.moviebooker.dto.PaymentResponse;
 import com.datnt.moviebooker.entity.Booking;
+import com.datnt.moviebooker.entity.EvoucherTransaction;
 import com.datnt.moviebooker.entity.Payment;
 import com.datnt.moviebooker.repository.BookingRepository;
 import com.datnt.moviebooker.repository.PaymentRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
@@ -24,10 +27,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
+    private static final Logger log = LoggerFactory.getLogger(PaymentServiceImpl.class);
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
     private final VnPayConfig vnPayConfig;
     private final WebSocketService webSocketService;
+    private final PointService pointService;
+    private final EvoucherTransactionService evoucherTransactionService;
 
     @Override
     public PaymentResponse createPayment(PaymentRequest request) {
@@ -143,6 +149,35 @@ public class PaymentServiceImpl implements PaymentService {
         paymentRepository.save(payment);
 
         webSocketService.sendBookingStatus(payment.getBooking().getId().toString(), payment.getStatus().name());
+        // Tích điểm cho người dùng để đổi voucher
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            var point = pointService.findByUserId(payment.getBooking().getUser().getId());
+            if (point != null) {
+                if (payment.getAmount() > 85000) {
+                    int pointsToAdd = (int) Math.ceil(payment.getAmount() * 0.08); // 8% of the payment amount, rounded up
+                    point.setAvailablePoints(pointsToAdd + point.getAvailablePoints());
+                    point.setTotalPoints(pointsToAdd + point.getTotalPoints());
+                    pointService.savePoint(point);
+
+                    EvoucherTransaction evoucherTransaction = EvoucherTransaction.builder()
+                            .user(payment.getBooking().getUser())
+                            .evoucher(null) // Evoucher is null here, but you can set it if needed
+                            .description("Tích điểm khi thanh toán thành công với đơn hàng có giá trị " + payment.getAmount() + " VND")
+                            .status("SUCCESS")
+                            .transactionDate(LocalDateTime.now())
+                            .transactionType(EvoucherTransaction.TransactionType.EARN)
+                            .points(pointsToAdd)
+                            .pointsBefore(point.getAvailablePoints() - pointsToAdd)
+                            .pointsAfter(point.getAvailablePoints())
+                            .build();
+                    evoucherTransactionService.createEvoucherTransaction(evoucherTransaction);
+
+                    log.info("Earned {} points for user ID: {}", pointsToAdd, payment.getBooking().getUser().getId());
+                } else {
+                    log.info("Payment amount is too low to earn points: {}", payment.getAmount());
+                }
+            }
+        }
 
         return "Payment " + payment.getStatus();
     }

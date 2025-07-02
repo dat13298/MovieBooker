@@ -125,7 +125,8 @@ public class RedeemVoucherServiceImpl {
                 evoucherTransaction.setTransactionDate(LocalDateTime.now());
                 evoucherTransaction.setUser(user);
                 evoucherTransaction.setEvoucher(evoucher);
-                evoucherTransaction.setPointsUsed(request.getPriceValue());
+                evoucherTransaction.setTransactionType(EvoucherTransaction.TransactionType.REDEEM);
+                evoucherTransaction.setPoints(request.getPriceValue());
                 evoucherTransaction.setPointsAfter(point.getAvailablePoints());
                 evoucherTransaction.setPointsBefore(point.getAvailablePoints() + request.getPriceValue());
                 evoucherTransactionRepository.save(evoucherTransaction);
