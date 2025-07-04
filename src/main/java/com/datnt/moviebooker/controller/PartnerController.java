@@ -85,7 +85,7 @@ public class PartnerController {
      * @return ApiWrapperResponse chứa chi tiết voucher
      */
     @GetMapping("/gift-detail")
-    public ApiWrapperResponse<GiftListResponse.Product> getGiftDetail(@RequestParam int productId) {
+    public ApiWrapperResponse<List<GiftListResponse.Product>> getGiftDetail(@RequestParam int productId) {
         return giftDetailService.getGiftDetail(productId);
     }
 

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.util.List;
 
 @Service
 public class GiftDetailService {
@@ -27,7 +28,7 @@ public class GiftDetailService {
         this.objectMapper = objectMapper;
     }
 
-    public ApiWrapperResponse<GiftListResponse.Product> getGiftDetail(int productId) {
+    public ApiWrapperResponse<List<GiftListResponse.Product>> getGiftDetail(int productId) {
         String path = GotitClient.PATH_GET_GIFT_DETAIL.replace("{productId}", String.valueOf(productId));
         try {
             HttpResponse<String> response = gotitClient.callApi(
@@ -36,11 +37,11 @@ public class GiftDetailService {
                     null,
                     null
             );
-            log.info("Response from GotIt API for productId {}: {}", productId, response.body());
             if (response.statusCode() == 200) {
-                ApiWrapper<GiftListResponse.Product> apiWrapper = objectMapper.readValue(
+                ApiWrapper<List<GiftListResponse.Product>> apiWrapper = objectMapper.readValue(
                         response.body(),
-                        objectMapper.getTypeFactory().constructParametricType(ApiWrapper.class, GiftListResponse.Product.class)
+                        objectMapper.getTypeFactory().constructParametricType(ApiWrapper.class,
+                                objectMapper.getTypeFactory().constructCollectionType(List.class, GiftListResponse.Product.class))
                 );
                 return ApiWrapperResponse.success(ResponseCode.SUCCESS, apiWrapper.getData());
             } else {

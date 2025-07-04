@@ -87,6 +87,7 @@ public class RedeemVoucherServiceImpl {
         data.put("expiryDate", LocalDate.now().plusDays(90).toString());
         data.put("orderName", "Đổi quà MovieBooker");
         data.put("transactionRefId", PREFIX_REDEEM_VOUCHER + UUID.randomUUID());
+        log.info("GotIt data: {}", data);
 
         try {
             // Convert data to JSON and call API
@@ -97,27 +98,54 @@ public class RedeemVoucherServiceImpl {
                     null,
                     requestBody
             );
+            log.info("GotIt response: {}", response.body());
 
             if (response.statusCode() == 200) {
                 RedeemVoucherResponse redeemResponse = objectMapper.readValue(
                         response.body(),
                         RedeemVoucherResponse.class
                 );
+
+                // Kiểm tra status từ API
+                if (!"OK".equals(redeemResponse.getStatus())) {
+                    throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
+                            "GotIt API error: " + redeemResponse.getError());
+                }
+
+                // Kiểm tra danh sách data
+                if (redeemResponse.getData() == null || redeemResponse.getData().isEmpty()) {
+                    throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
+                            "GotIt API error: Data list is null or empty");
+                }
+
+                // Lấy data item đầu tiên
+                RedeemVoucherResponse.DataItem dataItem = redeemResponse.getData().get(0);
+
+                // Kiểm tra danh sách vouchers
+                if (dataItem.getVouchers() == null || dataItem.getVouchers().isEmpty()) {
+                    throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
+                            "GotIt API error: Vouchers list is null or empty");
+                }
+
+                RedeemVoucherResponse.Voucher firstVoucher = dataItem.getVouchers().get(0);
+
+                // Tạo Evoucher entity
                 Evoucher evoucher = new Evoucher();
-                evoucher.setEvoucherName(redeemResponse.getVouchers().getFirst().getProduct().getProductNm());
-                evoucher.setCode(redeemResponse.getVouchers().getFirst().getVoucherCode());
-                evoucher.setBrandName(redeemResponse.getVouchers().getFirst().getProduct().getBrandNm());
+                evoucher.setEvoucherName(firstVoucher.getProduct().getProductNm());
+                evoucher.setCode(firstVoucher.getVoucherCode());
+                evoucher.setBrandName(firstVoucher.getProduct().getBrandNm());
                 evoucher.setPointsRequired(request.getPriceValue());
-                evoucher.setExpiryDate(redeemResponse.getVouchers().getFirst().getExpiryDate());
+                evoucher.setExpiryDate(firstVoucher.getExpiryDate());
                 evoucher.setGiftId(String.valueOf(request.getGiftId()));
                 evoucher.setStatus(Evoucher.Status.UNUSED);
-                evoucher.setSerial(redeemResponse.getVouchers().getFirst().getVoucherSerial());
+                evoucher.setSerial(firstVoucher.getVoucherSerial());
                 evoucher.setTypeCode(Evoucher.TypeCode.TEXTCODE);
-                evoucher.setImgUrl(redeemResponse.getVouchers().getFirst().getVoucherImageLink());
-                evoucher.setRefId(redeemResponse.getVouchers().getFirst().getTransactionRefId());
+                evoucher.setImgUrl(firstVoucher.getVoucherImageLink());
+                evoucher.setRefId(firstVoucher.getTransactionRefId());
                 evoucher.setCreatedBy(user.getId().toString());
                 evoucherRepository.save(evoucher);
 
+                // Tạo transaction
                 EvoucherTransaction evoucherTransaction = new EvoucherTransaction();
                 evoucherTransaction.setId(evoucher.getId());
                 evoucherTransaction.setDescription("Đổi Evoucher: " + evoucher.getEvoucherName());
@@ -130,16 +158,17 @@ public class RedeemVoucherServiceImpl {
                 evoucherTransaction.setPointsAfter(point.getAvailablePoints());
                 evoucherTransaction.setPointsBefore(point.getAvailablePoints() + request.getPriceValue());
                 evoucherTransactionRepository.save(evoucherTransaction);
+
                 log.info("Voucher redeemed successfully: {}, user: {}", evoucher.getCode(), user.getUsername());
                 return "Đổi quà thành công, vui lòng xem trong kho voucher của bạn";
             } else {
                 throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
-                    "GotIt API error: " + response.body());
+                        "GotIt API error: " + response.body());
             }
         } catch (IOException | InterruptedException e) {
             log.error("Error during voucher redemption: {}", e.getMessage(), e);
             throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
-                "Error processing voucher redemption: " + e.getMessage());
+                    "Error processing voucher redemption: " + e.getMessage());
         }
     }
 
