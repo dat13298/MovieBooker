@@ -7,6 +7,7 @@ import com.datnt.moviebooker.dto.partner.response.RedeemVoucherResponse;
 import com.datnt.moviebooker.entity.Evoucher;
 import com.datnt.moviebooker.entity.EvoucherTransaction;
 import com.datnt.moviebooker.entity.Point;
+import com.datnt.moviebooker.entity.User;
 import com.datnt.moviebooker.exception.BusinessException;
 import com.datnt.moviebooker.repository.EvoucherRepository;
 import com.datnt.moviebooker.repository.EvoucherTransactionRepository;
@@ -87,7 +88,6 @@ public class RedeemVoucherServiceImpl {
         data.put("expiryDate", LocalDate.now().plusDays(90).toString());
         data.put("orderName", "Đổi quà MovieBooker");
         data.put("transactionRefId", PREFIX_REDEEM_VOUCHER + UUID.randomUUID());
-        log.info("GotIt data: {}", data);
 
         try {
             // Convert data to JSON and call API
@@ -98,7 +98,6 @@ public class RedeemVoucherServiceImpl {
                     null,
                     requestBody
             );
-            log.info("GotIt response: {}", response.body());
 
             if (response.statusCode() == 200) {
                 RedeemVoucherResponse redeemResponse = objectMapper.readValue(
@@ -107,42 +106,7 @@ public class RedeemVoucherServiceImpl {
                 );
 
                 // Kiểm tra status từ API
-                if (!"OK".equals(redeemResponse.getStatus())) {
-                    throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
-                            "GotIt API error: " + redeemResponse.getError());
-                }
-
-                // Kiểm tra danh sách data
-                if (redeemResponse.getData() == null || redeemResponse.getData().isEmpty()) {
-                    throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
-                            "GotIt API error: Data list is null or empty");
-                }
-
-                // Lấy data item đầu tiên
-                RedeemVoucherResponse.DataItem dataItem = redeemResponse.getData().get(0);
-
-                // Kiểm tra danh sách vouchers
-                if (dataItem.getVouchers() == null || dataItem.getVouchers().isEmpty()) {
-                    throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
-                            "GotIt API error: Vouchers list is null or empty");
-                }
-
-                RedeemVoucherResponse.Voucher firstVoucher = dataItem.getVouchers().get(0);
-
-                // Tạo Evoucher entity
-                Evoucher evoucher = new Evoucher();
-                evoucher.setEvoucherName(firstVoucher.getProduct().getProductNm());
-                evoucher.setCode(firstVoucher.getVoucherCode());
-                evoucher.setBrandName(firstVoucher.getProduct().getBrandNm());
-                evoucher.setPointsRequired(request.getPriceValue());
-                evoucher.setExpiryDate(firstVoucher.getExpiryDate());
-                evoucher.setGiftId(String.valueOf(request.getGiftId()));
-                evoucher.setStatus(Evoucher.Status.UNUSED);
-                evoucher.setSerial(firstVoucher.getVoucherSerial());
-                evoucher.setTypeCode(Evoucher.TypeCode.TEXTCODE);
-                evoucher.setImgUrl(firstVoucher.getVoucherImageLink());
-                evoucher.setRefId(firstVoucher.getTransactionRefId());
-                evoucher.setCreatedBy(user.getId().toString());
+                Evoucher evoucher = addEvoucher(request, redeemResponse, user);
                 evoucherRepository.save(evoucher);
 
                 // Tạo transaction
@@ -170,6 +134,50 @@ public class RedeemVoucherServiceImpl {
             throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
                     "Error processing voucher redemption: " + e.getMessage());
         }
+    }
+
+    private static Evoucher addEvoucher(RedeemVoucherRequest request, RedeemVoucherResponse redeemResponse, User user) {
+        if (!"OK".equals(redeemResponse.getStatus())) {
+            throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "GotIt API error: " + redeemResponse.getError());
+        }
+
+        // Kiểm tra danh sách data
+        if (redeemResponse.getData() == null || redeemResponse.getData().isEmpty()) {
+            throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "GotIt API error: Data list is null or empty");
+        }
+
+        // Lấy data item đầu tiên
+        RedeemVoucherResponse.DataItem dataItem = redeemResponse.getData().get(0);
+
+        // Kiểm tra danh sách vouchers
+        if (dataItem.getVouchers() == null || dataItem.getVouchers().isEmpty()) {
+            throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR,
+                    "GotIt API error: Vouchers list is null or empty");
+        }
+
+        return addEvoucher(request, user, dataItem);
+    }
+
+    private static Evoucher addEvoucher(RedeemVoucherRequest request, User user, RedeemVoucherResponse.DataItem dataItem) {
+        RedeemVoucherResponse.Voucher firstVoucher = dataItem.getVouchers().get(0);
+
+        // Tạo Evoucher entity
+        Evoucher evoucher = new Evoucher();
+        evoucher.setEvoucherName(firstVoucher.getProduct().getProductNm());
+        evoucher.setCode(firstVoucher.getVoucherCode());
+        evoucher.setBrandName(firstVoucher.getProduct().getBrandNm());
+        evoucher.setPointsRequired(request.getPriceValue());
+        evoucher.setExpiryDate(firstVoucher.getExpiryDate());
+        evoucher.setGiftId(String.valueOf(request.getGiftId()));
+        evoucher.setStatus(Evoucher.Status.UNUSED);
+        evoucher.setSerial(firstVoucher.getVoucherSerial());
+        evoucher.setTypeCode(Evoucher.TypeCode.TEXTCODE);
+        evoucher.setImgUrl(firstVoucher.getVoucherImageLink());
+        evoucher.setRefId(firstVoucher.getTransactionRefId());
+        evoucher.setCreatedBy(user.getId().toString());
+        return evoucher;
     }
 
     // Step Exception: Hoàn lại điểm nếu có lỗi xảy ra từ bước 2

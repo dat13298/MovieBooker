@@ -5,6 +5,8 @@ import com.datnt.moviebooker.common.ResponseCode;
 import com.datnt.moviebooker.dto.partner.request.RedeemVoucherRequest;
 import com.datnt.moviebooker.entity.Point;
 import com.datnt.moviebooker.exception.BusinessException;
+import com.datnt.moviebooker.security.JwtService;
+import com.datnt.moviebooker.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RedeemVoucherService {
     private final RedeemVoucherServiceImpl redeemVoucherServiceImpl;
+    private final AuthService authService;
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 1000; // 1 giây thời gian delay khi retry lại
 
@@ -53,15 +56,15 @@ public class RedeemVoucherService {
 
             // Nếu tất cả các lần retry đều thất bại
             log.error("All {} retry attempts failed", MAX_RETRIES);
-            redeemVoucherServiceImpl.rollBackPoint(userId, request);
             throw lastException;
-
         } catch (BusinessException e) {
-            log.error("Error during voucher redemption process: {}", e.getMessage());
-            return ApiWrapperResponse.error(e.getResponseCode(), e.getMessage());
+            log.error("Business exception during voucher redemption: {}", e.getMessage());
+            redeemVoucherServiceImpl.rollBackPoint(authService.getCurrentUserId(), request);
+            throw new BusinessException(ResponseCode.REDEEM_VOUCHER_FAILED);
         } catch (Exception e) {
             log.error("Unexpected error during voucher redemption: {}", e.getMessage(), e);
-            return ApiWrapperResponse.error(ResponseCode.REDEEM_VOUCHER_FAILED);
+            redeemVoucherServiceImpl.rollBackPoint(authService.getCurrentUserId(), request);
+            throw new BusinessException(ResponseCode.REDEEM_VOUCHER_FAILED);
         }
     }
 }
