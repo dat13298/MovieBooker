@@ -54,7 +54,7 @@ public class Evoucher extends BaseEntity {
     @Column(name = "type_code", length = 10)
     private TypeCode typeCode;
 
-    @Column(name = "img_url", length = 255)
+    @Column(name = "img_url")
     private String imgUrl;
 
     @Column(name = "ref_id", length = 50, nullable = false)
