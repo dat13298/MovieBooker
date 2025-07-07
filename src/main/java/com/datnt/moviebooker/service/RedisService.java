@@ -13,6 +13,7 @@ import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -59,6 +60,54 @@ public class RedisService {
             seatService.clearShowtimeCache(showTimeId);
             webSocketService.sendSeatReleased(seatId, showTimeId);
         }
+    }
+
+    // Save data for any type
+    public <T> void saveDataGeneric(String key, T value, long timeout, TimeUnit timeUnit) {
+        redisTemplate.opsForValue().set(key, value.toString(), timeout, timeUnit);
+    }
+
+    // Get data for any type
+    public <T> T getDataGeneric(String key, Class<T> clazz) {
+        String value = redisTemplate.opsForValue().get(key);
+        if (value == null) {
+            return null;
+        }
+        if (clazz == String.class) {
+            return clazz.cast(value);
+        } else if (clazz == Integer.class) {
+            return clazz.cast(Integer.parseInt(value));
+        } else if (clazz == Long.class) {
+            return clazz.cast(Long.parseLong(value));
+        } else if (clazz == Boolean.class) {
+            return clazz.cast(Boolean.parseBoolean(value));
+        }
+        throw new IllegalArgumentException("Unsupported data type: " + clazz.getName());
+    }
+
+    // Delete a key
+    public void deleteKey(String key) {
+        redisTemplate.delete(key);
+    }
+
+    // Check if a key exists
+    public boolean keyExists(String key) {
+        return Boolean.TRUE.equals(redisTemplate.hasKey(key));
+    }
+
+    // Find keys by pattern
+    public Set<String> findKeys(String pattern) {
+        return redisTemplate.keys(pattern);
+    }
+
+    // Extend the expiration time of a key
+    public boolean extendKeyExpiration(String key, long timeout, TimeUnit timeUnit) {
+        return Boolean.TRUE.equals(redisTemplate.expire(key, timeout, timeUnit));
+    }
+
+    // Get the remaining expiration time of a key
+    public Long getKeyExpiration(String key, TimeUnit timeUnit) {
+        return redisTemplate.getExpire(key, timeUnit);
     }
 
     @PostConstruct
