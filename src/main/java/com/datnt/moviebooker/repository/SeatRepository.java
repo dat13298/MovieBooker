@@ -12,4 +12,5 @@ import java.util.List;
 public interface SeatRepository extends JpaRepository<Seat, Long> {
     Page<Seat> findSeatsByScreen_Id(Long screenId, Pageable pageable);
     List<Seat> findByShowTime_Id(Long showTimeId);
+    int countByShowTime_Id(Long showTimeId);
 }

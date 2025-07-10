@@ -2,6 +2,7 @@ package com.datnt.moviebooker.service;
 
 import com.datnt.moviebooker.constant.SeatStatus;
 import com.datnt.moviebooker.dto.SeatRequest;
+import com.datnt.moviebooker.dto.SeatRequestWithId;
 import com.datnt.moviebooker.dto.SeatResponse;
 import com.datnt.moviebooker.entity.Screen;
 import com.datnt.moviebooker.entity.Seat;
@@ -70,6 +71,13 @@ public class SeatService {
         return page.map(seatMapper::toResponse);
     }
 
+    public Long getShowTimeIdBySeatId(Long seatId) {
+        return seatRepo.findById(seatId)
+                .map(seat -> seat.getShowTime().getId())
+                .orElse(null);
+    }
+
+
     @Transactional
     public void updateSeatStatus(Long seatId, SeatStatus status) {
         seatRepo.findById(seatId).ifPresent(seat -> {
@@ -77,6 +85,38 @@ public class SeatService {
             seatRepo.save(seat);
         });
     }
+
+    @Transactional
+    public void bulkUpsert(List<SeatRequestWithId> seatDtos) {
+        for (SeatRequestWithId dto : seatDtos) {
+            if (dto.getId() == null) {
+                createSeat(convertToSeatRequest(dto));
+            } else {
+                updateSeat(dto.getId(), convertToSeatRequest(dto));
+            }
+        }
+        // clear cache sau khi thao tác
+        if (!seatDtos.isEmpty()) {
+            Long screenId = seatDtos.get(0).getScreenId();
+            Long showTimeId = seatDtos.get(0).getShowTimeId();
+            clearSeatCache(screenId);
+            clearShowtimeCache(showTimeId);
+        }
+    }
+
+    private SeatRequest convertToSeatRequest(SeatRequestWithId dto) {
+        SeatRequest req = new SeatRequest();
+        req.setSeatNumber(dto.getSeatNumber());
+        req.setScreenId(dto.getScreenId());
+        req.setShowTimeId(dto.getShowTimeId());
+        req.setPrice(dto.getPrice());
+        req.setSeatType(dto.getSeatType());
+        req.setStatus(dto.getStatus());
+        req.setRowIdx(dto.getRowIdx());
+        req.setColIdx(dto.getColIdx());
+        return req;
+    }
+
 
     public void clearShowtimeCache(Long showTimeId) {
         redis.delete(ST_CACHE + showTimeId);

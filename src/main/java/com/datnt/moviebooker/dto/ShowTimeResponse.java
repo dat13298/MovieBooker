@@ -5,7 +5,9 @@ import java.sql.Timestamp;
 public record ShowTimeResponse(
         Long id,
         MovieResponse movie,
-        Long screenId,
+        ScreenResponse screen,
         Timestamp startTime,
-        String presentation
+        Timestamp endTime,
+        String presentation,
+        int seatCount
 ) {}

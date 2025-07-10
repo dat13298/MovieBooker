@@ -43,7 +43,6 @@ public class ShowTimeService {
     public Page<ShowTimeResponse> getAllShowTimes(Pageable pageable) {
         HashOperations<String, String, String> hashOps = redisTemplate.opsForHash();
 
-        // get all show times from cache
         List<ShowTimeResponse> cachedShowTimes = hashOps.entries(SHOWTIME_CACHE_KEY).values().stream()
                 .map(json -> {
                     try {
@@ -56,7 +55,6 @@ public class ShowTimeService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        // if cache is empty, get all show times from database and save to cache
         if (cachedShowTimes.isEmpty()) {
             List<ShowTime> showTimes = showTimeRepository.findAll();
             cachedShowTimes = showTimes.stream()
@@ -68,6 +66,10 @@ public class ShowTimeService {
         }
 
         return paginateList(cachedShowTimes, pageable);
+    }
+
+    public void refreshShowTimeCache(Long showTimeId) {
+        showTimeRepository.findById(showTimeId).ifPresent(this::updateShowTimeCache);
     }
 
     public ShowTimeResponse createShowTime(ShowTimeRequest request) {

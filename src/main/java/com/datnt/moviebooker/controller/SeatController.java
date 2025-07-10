@@ -1,12 +1,10 @@
 package com.datnt.moviebooker.controller;
 
-import com.datnt.moviebooker.dto.LockSeatRequest;
-import com.datnt.moviebooker.dto.SeatRequest;
-import com.datnt.moviebooker.dto.SeatResponse;
-import com.datnt.moviebooker.dto.UnlockSeatRequest;
+import com.datnt.moviebooker.dto.*;
 import com.datnt.moviebooker.service.AuthService;
 import com.datnt.moviebooker.service.RedisService;
 import com.datnt.moviebooker.service.SeatService;
+import com.datnt.moviebooker.service.ShowTimeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,6 +22,7 @@ public class SeatController {
     private final RedisService redisService;
     private final SeatService seatService;
     private final AuthService authService;
+    private final ShowTimeService showTimeService;
 
     @PostMapping("/lock")
     @PreAuthorize("isAuthenticated()")
@@ -69,6 +68,20 @@ public class SeatController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/bulk")
+    public ResponseEntity<?> bulkUpsertSeats(@Valid @RequestBody SeatBulkRequest req) {
+        seatService.bulkUpsert(req.getSeats());
+
+        if (!req.getSeats().isEmpty()) {
+            Long showTimeId = req.getSeats().get(0).getShowTimeId();
+            showTimeService.refreshShowTimeCache(showTimeId);
+        }
+
+        return ResponseEntity.ok("Seats updated");
+    }
+
+
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<SeatResponse> updateSeat(
             @PathVariable Long id, @Valid @RequestBody SeatRequest request) {
@@ -78,7 +91,14 @@ public class SeatController {
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSeat(@PathVariable Long id) {
+        Long showTimeId = seatService.getShowTimeIdBySeatId(id); // 👈 THÊM phương thức này
         seatService.deleteSeat(id);
+
+        if (showTimeId != null) {
+            showTimeService.refreshShowTimeCache(showTimeId); // 👈 Cập nhật lại cache
+        }
+
         return ResponseEntity.noContent().build();
     }
+
 }

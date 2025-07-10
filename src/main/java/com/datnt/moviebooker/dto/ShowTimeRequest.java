@@ -7,5 +7,6 @@ public record ShowTimeRequest(
         @NotNull(message = "Movie ID cannot be null") Long movieId,
         @NotNull(message = "Screen ID cannot be null") Long screenId,
         @NotNull(message = "Start Time cannot be null") Timestamp startTime,
+        @NotNull(message = "End Time cannot be null") Timestamp endTime,
         @NotNull String presentation
 ) {}
