@@ -20,13 +20,14 @@ public class FoodBooking extends BaseEntity {
 
     @ManyToOne
     @JoinColumn(name = "food_service_id", nullable = false)
-    private FoodService foodServiceId;
+    private ComboFood comboFood;
 
     @ManyToOne
     @JoinColumn(name = "booking_id", nullable = false)
-    private Booking bookingId;
+    private Booking booking;
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
+    private Long price;
 }

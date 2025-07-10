@@ -20,6 +20,7 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -115,6 +116,14 @@ public class ShowTimeService {
     public ShowTime findEntityById(Long id) {
         return showTimeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("ShowTime not found!"));
+    }
+
+    public List<ShowTimeResponse> getUpcomingShowTimesByMovie(Long movieId) {
+        List<ShowTime> showTimes = showTimeRepository.findByMovieIdAndStartTimeAfter(movieId, LocalDateTime.now());
+
+        return showTimes.stream()
+                .map(showTimeMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
 

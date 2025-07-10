@@ -10,5 +10,8 @@ public record BookingResponse(
         Long showTimeId,
         Status status,
         LocalDateTime createdAt,
-        List<BookingSeatResponse> seats
+        List<BookingSeatResponse> seats,
+        List<ComboItemResponse> combos,
+        Long totalAmount
 ) {}
+

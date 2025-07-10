@@ -26,4 +26,6 @@ public class BookingSeat extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "seat_id")
     private Seat seat;
+
+    private Long price;
 }

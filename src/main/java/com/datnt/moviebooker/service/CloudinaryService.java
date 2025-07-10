@@ -41,7 +41,7 @@ public class CloudinaryService {
         }
 
         String filename = file.getOriginalFilename();
-        if (filename == null || !filename.toLowerCase().matches(".*\\.(jpg|jpeg|png)$")) {
+        if (filename == null || !filename.toLowerCase().matches(".*\\.(jpg|jpeg|png|webp)$")) {
             throw new IllegalArgumentException("Only JPG and PNG image files are allowed.");
         }
 

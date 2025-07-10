@@ -39,7 +39,7 @@ public class BookingController {
             }
         }
 
-        Booking booking = bookingService.createPendingBooking(request.showTimeId(), request.seatIds(), userId);
+        Booking booking = bookingService.createPendingBooking(request.showTimeId(), request.seatIds(), request.comboItems(), userId);
 
         // create message and send to Kafka
         BookingMessage message = new BookingMessage();

@@ -57,4 +57,8 @@ public class ShowTimeController {
         return ResponseEntity.ok(seatService.findSeatsByShowTime(id));
     }
 
+    @GetMapping("/movie/{movieId}/upcoming")
+    public ResponseEntity<List<ShowTimeResponse>> getUpcomingByMovie(@PathVariable Long movieId) {
+        return ResponseEntity.ok(showTimeService.getUpcomingShowTimesByMovie(movieId));
+    }
 }

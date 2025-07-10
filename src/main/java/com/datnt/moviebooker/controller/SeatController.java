@@ -35,7 +35,7 @@ public class SeatController {
                 req.getSeatId(),
                 req.getShowTimeId(),
                 userId,
-                30, TimeUnit.SECONDS);
+                10, TimeUnit.MINUTES);
 
         return locked
                 ? ResponseEntity.ok("Seat locked")
