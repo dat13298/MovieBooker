@@ -21,6 +21,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -164,8 +165,15 @@ public class ShowTimeService {
     }
 
     private Page<ShowTimeResponse> paginateList(List<ShowTimeResponse> showTimes, Pageable pageable) {
+        int total = showTimes.size();
         int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), showTimes.size());
-        return new PageImpl<>(showTimes.subList(start, end), pageable, showTimes.size());
+
+        if (start >= total) {
+            return new PageImpl<>(Collections.emptyList(), pageable, total);
+        }
+
+        int end = Math.min(start + pageable.getPageSize(), total);
+        return new PageImpl<>(showTimes.subList(start, end), pageable, total);
     }
+
 }

@@ -14,10 +14,10 @@ public class WebSocketService {
 
     public void sendSeatLocked(Long seatId,
                                Long showTimeId,
-                               Long userId,
+                               String username,
                                long expiresAt) {
         SeatEvent evt = new SeatEvent(
-                "LOCKED", seatId, showTimeId, userId, expiresAt, null);
+                "LOCKED", seatId, showTimeId,  username, expiresAt, null);
         messagingTemplate.convertAndSend(
                 "/topic/showtime/" + showTimeId, evt);
     }

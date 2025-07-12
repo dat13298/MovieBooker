@@ -28,12 +28,12 @@ public class SeatController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> lockSeat(@RequestBody LockSeatRequest req) {
         System.out.println("Locking seat: " + req.getSeatId() + " for show time: " + req.getShowTimeId());
-        Long userId = authService.getCurrentUserId();
+        String username = authService.getCurrentUsername();
 
         boolean locked = redisService.tryLockSeat(
                 req.getSeatId(),
                 req.getShowTimeId(),
-                userId,
+                username,
                 10, TimeUnit.MINUTES);
 
         return locked

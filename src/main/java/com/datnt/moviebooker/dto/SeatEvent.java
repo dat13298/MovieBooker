@@ -9,7 +9,7 @@ public class SeatEvent {
     private String type;
     private Long   seatId;
     private Long   showTimeId;
-    private Long   userId;
+    private String username;
     private Long   expiresAt;
     private Long   bookingId;
 }

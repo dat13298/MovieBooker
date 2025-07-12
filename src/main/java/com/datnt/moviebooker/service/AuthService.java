@@ -56,6 +56,17 @@ public class AuthService {
         return jwtService.generateToken(user.getUsername(), user.getRole().toString());
     }
 
+    public String getCurrentUsername() {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (principal instanceof UserDetails) {
+            return ((UserDetails) principal).getUsername();
+        } else {
+            throw new RuntimeException("User not authenticated");
+        }
+    }
+
+
     // Get current user id from SecurityContext
     public Long getCurrentUserId() {
         // Get principal from SecurityContext

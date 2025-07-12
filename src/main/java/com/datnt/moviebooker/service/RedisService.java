@@ -32,13 +32,13 @@ public class RedisService {
         return redisTemplate.opsForValue().get(key);
     }
 
-    public boolean tryLockSeat(Long seatId, Long showTimeId, Long userId,
+    public boolean tryLockSeat(Long seatId, Long showTimeId, String username,
                                long timeout, TimeUnit unit) {
 
         String key = "seat_lock:" + showTimeId + ":" + seatId;
 
         Boolean ok = redisTemplate.opsForValue()
-                .setIfAbsent(key, userId.toString(), timeout, unit);
+                .setIfAbsent(key, username, timeout, unit);
 
         if (Boolean.TRUE.equals(ok)) {
             seatService.updateSeatStatus(seatId, SeatStatus.UNAVAILABLE);
@@ -47,7 +47,7 @@ public class RedisService {
             long expiresAt = System.currentTimeMillis()
                     + TimeUnit.MILLISECONDS.convert(timeout, unit);
 
-            webSocketService.sendSeatLocked(seatId, showTimeId, userId, expiresAt);
+            webSocketService.sendSeatLocked(seatId, showTimeId, username, expiresAt);
         }
         return Boolean.TRUE.equals(ok);
     }
