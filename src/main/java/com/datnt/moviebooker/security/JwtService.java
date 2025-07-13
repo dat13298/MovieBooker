@@ -31,9 +31,13 @@ public class JwtService {
     }
 
     // Generate Access Token
-    public String generateToken(String username, String role) {
+    public String generateToken(String username, String role, String email, String phone, String gender, String dob) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("username", username);
+        claims.put("email", email);
+        claims.put("phone", phone);
+        claims.put("gender", gender);
+        claims.put("dob", dob);
         claims.put("role", role);
 
         return buildToken(claims, jwtExpiration);
