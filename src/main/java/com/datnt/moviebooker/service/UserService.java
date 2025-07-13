@@ -1,6 +1,7 @@
 package com.datnt.moviebooker.service;
 
 import com.datnt.moviebooker.common.ResponseCode;
+import com.datnt.moviebooker.constant.Gender;
 import com.datnt.moviebooker.constant.Role;
 import com.datnt.moviebooker.dto.AdminCreateUserRequest;
 import com.datnt.moviebooker.dto.UserRegisterRequest;
@@ -15,6 +16,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -46,6 +51,43 @@ public class UserService {
             throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR, ex.getMessage());
         }
     }
+
+    public UserResponse updateCurrentUser(Map<String, Object> updates, Long userId) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(ResponseCode.USER_NOT_FOUND));
+
+            if (updates.containsKey("username")) {
+                user.setUsername((String) updates.get("username"));
+            }
+            if (updates.containsKey("email")) {
+                user.setEmail((String) updates.get("email"));
+            }
+            if (updates.containsKey("phone")) {
+                user.setPhoneNumber((String) updates.get("phone"));
+            }
+            if (updates.containsKey("gender")) {
+                user.setGender(Gender.valueOf((String) updates.get("gender")));
+            }
+            if (updates.containsKey("dob")) {
+                String dobStr = (String) updates.get("dob");
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                try {
+                    Date dob = formatter.parse(dobStr);
+                    user.setDoB(dob);
+                } catch (ParseException e) {
+                    throw new BusinessException(ResponseCode.CONFLICT, "Ngày sinh không hợp lệ (yyyy-MM-dd)");
+                }
+            }
+
+            userRepository.save(user);
+            return userMapper.toResponse(user);
+        } catch (DataIntegrityViolationException ex) {
+            handleConstraintViolation(ex);
+            throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR, ex.getMessage());
+        }
+    }
+
 
     private void handleConstraintViolation(DataIntegrityViolationException ex) {
         Throwable cause = ex.getCause();
