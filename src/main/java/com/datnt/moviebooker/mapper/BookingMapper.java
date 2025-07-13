@@ -4,7 +4,6 @@ import com.datnt.moviebooker.dto.BookingResponse;
 import com.datnt.moviebooker.dto.BookingSeatResponse;
 import com.datnt.moviebooker.dto.ComboItemResponse;
 import com.datnt.moviebooker.entity.Booking;
-import com.datnt.moviebooker.mapper.ComboItemMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +30,16 @@ public class BookingMapper {
                 .collect(Collectors.toList())
                 : new ArrayList<>();
 
+        var showTime = booking.getShowTime();
+        var movie = showTime.getMovie();
+        var theater = showTime.getScreen();
+        String movieTitle = movie.getMovieName();
+        String theaterName = theater.getName();
+        String showHour = showTime.getStartTime().toString();
+        List<String> seatCodes = booking.getBookingSeats().stream()
+                .map(seat -> seat.getSeat().getSeatNumber())
+                .collect(Collectors.toList());
+
         return new BookingResponse(
                 booking.getId(),
                 booking.getUser().getId(),
@@ -39,7 +48,11 @@ public class BookingMapper {
                 booking.getCreatedAt(),
                 seatResponses,
                 comboResponses,
-                booking.getTotalAmount()
+                booking.getTotalAmount(),
+                movieTitle,
+                theaterName,
+                seatCodes,
+                showHour
         );
     }
 }

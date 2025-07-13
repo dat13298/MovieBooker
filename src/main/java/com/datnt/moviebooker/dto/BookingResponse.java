@@ -12,6 +12,10 @@ public record BookingResponse(
         LocalDateTime createdAt,
         List<BookingSeatResponse> seats,
         List<ComboItemResponse> combos,
-        Long totalAmount
+        Long totalAmount,
+        String movieTitle,
+        String theaterName,
+        List<String> seatCodes,
+        String showTime
 ) {}
 
