@@ -54,7 +54,7 @@ public class User extends BaseEntity {
 
     @Temporal(TemporalType.DATE)
     @Column(nullable = false, name = "date_of_birth")
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "dd/MM/yyyy", timezone = "Asia/Ho_Chi_Minh")
     private Date DoB;
 
     @NotNull(message = "Gender cannot be null")

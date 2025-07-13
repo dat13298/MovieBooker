@@ -34,7 +34,7 @@ public class AuthService {
 
         // Generate access token and refresh token
         User user = userService.findByUsername(username);
-        String accessToken = jwtService.generateToken(user.getUsername(), user.getRole().toString());
+        String accessToken = jwtService.generateToken(user.getUsername(), user.getRole().toString(), user.getEmail(), user.getPhoneNumber(), user.getGender().toString(), user.getDoB().toString());
         var refreshToken = refreshTokenService.createRefreshToken(user);
 
         return new AuthResponse(accessToken, refreshToken.getToken(), user.getUsername(), user.getEmail(), user.getPhoneNumber(), user.getRole().toString());
@@ -53,7 +53,7 @@ public class AuthService {
 
         // Generate new access token
         var user = tokenEntity.getUser();
-        return jwtService.generateToken(user.getUsername(), user.getRole().toString());
+        return jwtService.generateToken(user.getUsername(), user.getRole().toString(), user.getEmail(), user.getPhoneNumber(), user.getGender().toString(), user.getDoB().toString());
     }
 
     public String getCurrentUsername() {
