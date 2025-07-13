@@ -29,12 +29,13 @@ public class BookingController {
     @PostMapping("/create")
     public ResponseEntity<?> createBooking(@RequestBody BookingRequest request) {
         Long userId = authService.getCurrentUserId();
+        String username = authService.getCurrentUsername();
         String bookingId = UUID.randomUUID().toString();  // create bookingId for tracking booking status
 
         // check if seat is already booked or not locked
         for (Long seatId : request.seatIds()) {
             String lockedBy = redisService.getData("seat_lock:" + request.showTimeId() + ":" + seatId);
-            if (lockedBy == null || !lockedBy.equals(userId.toString())) {
+            if (lockedBy == null || !lockedBy.equals(username)) {
                 return ResponseEntity.badRequest().body("Seat " + seatId + " is already booked or not locked!");
             }
         }
