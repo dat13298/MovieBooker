@@ -3,7 +3,9 @@ package com.datnt.moviebooker.controller;
 import com.datnt.moviebooker.dto.AdminCreateUserRequest;
 import com.datnt.moviebooker.dto.UserRegisterRequest;
 import com.datnt.moviebooker.dto.UserResponse;
+import com.datnt.moviebooker.service.AuthService;
 import com.datnt.moviebooker.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,13 +13,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+    private final AuthService authService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
@@ -49,4 +52,11 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateCurrentUser(@RequestBody Map<String, Object> updates) {
+        Long userId = authService.getCurrentUserId();
+        return ResponseEntity.ok(userService.updateCurrentUser(updates, userId));
+    }
+
 }
