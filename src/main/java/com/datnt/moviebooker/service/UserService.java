@@ -43,6 +43,46 @@ public class UserService {
         }
     }
 
+    public UserResponse updateUserByAdmin(Long userId, Map<String, Object> updates) {
+        try {
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new BusinessException(ResponseCode.USER_NOT_FOUND));
+
+            if (updates.containsKey("username")) {
+                user.setUsername((String) updates.get("username"));
+            }
+            if (updates.containsKey("email")) {
+                user.setEmail((String) updates.get("email"));
+            }
+            if (updates.containsKey("phoneNumber")) {
+                user.setPhoneNumber((String) updates.get("phoneNumber"));
+            }
+            if (updates.containsKey("gender")) {
+                user.setGender(Gender.valueOf((String) updates.get("gender")));
+            }
+            if (updates.containsKey("DoB")) {
+                String dobStr = (String) updates.get("DoB");
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                try {
+                    Date dob = formatter.parse(dobStr);
+                    user.setDoB(dob);
+                } catch (ParseException e) {
+                    throw new BusinessException(ResponseCode.CONFLICT, "Ngày sinh không hợp lệ (yyyy-MM-dd)");
+                }
+            }
+            if (updates.containsKey("role")) {
+                user.setRole(Role.valueOf((String) updates.get("role")));
+            }
+
+            userRepository.save(user);
+            return userMapper.toResponse(user);
+
+        } catch (DataIntegrityViolationException ex) {
+            handleConstraintViolation(ex);
+            throw new BusinessException(ResponseCode.INTERNAL_SERVER_ERROR, ex.getMessage());
+        }
+    }
+
     public UserResponse createUserByAdmin(AdminCreateUserRequest request) {
         try {
             return createUserInternal(request, request.getRole());

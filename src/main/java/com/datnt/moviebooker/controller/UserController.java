@@ -59,4 +59,10 @@ public class UserController {
         return ResponseEntity.ok(userService.updateCurrentUser(updates, userId));
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/{id}")
+    public ResponseEntity<UserResponse> updateUserByAdmin(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
+        return ResponseEntity.ok(userService.updateUserByAdmin(id, updates));
+    }
+
 }
