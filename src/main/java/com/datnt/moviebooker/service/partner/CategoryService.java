@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
@@ -37,7 +38,10 @@ public class CategoryService {
         String cacheKey = "categories:all";
 
         // Check cache first
-        List<CategoryResponse> cachedCategories = redisService.getDataGeneric(cacheKey, List.class);
+        List<CategoryResponse> cachedCategories = redisService.getDataFromJson(
+                cacheKey,
+                new TypeReference<List<CategoryResponse>>() {}
+        );
         if (cachedCategories != null) {
             return ApiWrapperResponse.success(ResponseCode.SUCCESS, cachedCategories);
         }
