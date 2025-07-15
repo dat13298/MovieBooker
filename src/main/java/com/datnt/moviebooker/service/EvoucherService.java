@@ -12,7 +12,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -60,9 +62,9 @@ public class EvoucherService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime expiryDateTime = LocalDateTime.parse(evoucher.getExpiryDate(), DATE_FORMATTER)
-                .plusDays(1)
-                .minusSeconds(1);
+        LocalDate expiryDate = LocalDate.parse(evoucher.getExpiryDate(), DATE_FORMATTER);
+        LocalDateTime expiryDateTime = expiryDate.atTime(LocalTime.MAX);
+
 
         if (now.isAfter(expiryDateTime)) {
             evoucher.setStatus(Evoucher.Status.EXPIRED);
