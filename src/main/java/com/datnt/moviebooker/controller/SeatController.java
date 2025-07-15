@@ -26,7 +26,7 @@ public class SeatController {
 
     @PostMapping("/lock")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<?> lockSeat(@RequestBody LockSeatRequest req) {
+    public ResponseEntity<?> lockSeat(@RequestBody @Valid LockSeatRequest req) {
         System.out.println("Locking seat: " + req.getSeatId() + " for show time: " + req.getShowTimeId());
         String username = authService.getCurrentUsername();
 

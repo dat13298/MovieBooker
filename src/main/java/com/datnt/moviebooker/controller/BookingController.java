@@ -6,6 +6,7 @@ import com.datnt.moviebooker.dto.BookingResponse;
 import com.datnt.moviebooker.entity.Booking;
 import com.datnt.moviebooker.kafka.KafkaProducer;
 import com.datnt.moviebooker.service.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,7 @@ public class BookingController {
     private final RedisService redisService;
 
     @PostMapping("/create")
-    public ResponseEntity<?> createBooking(@RequestBody BookingRequest request) {
+    public ResponseEntity<?> createBooking(@RequestBody @Valid BookingRequest request) {
         Long userId = authService.getCurrentUserId();
         String username = authService.getCurrentUsername();
         String bookingId = UUID.randomUUID().toString();  // create bookingId for tracking booking status
