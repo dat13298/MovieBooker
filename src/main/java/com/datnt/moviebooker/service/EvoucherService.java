@@ -29,7 +29,7 @@ public class EvoucherService {
 
     public ApiWrapperResponse<List<GetAllVoucherResponse>> getUnusedVouchers() {
         List<Evoucher> unusedEvouchers = evoucherRepository.findByCreatedByAndStatus(
-                String.valueOf(authService.getCurrentUserId()), String.valueOf(Evoucher.Status.UNUSED));
+                String.valueOf(authService.getCurrentUsername()), Evoucher.Status.UNUSED.name());
         if (unusedEvouchers.isEmpty()) {
             throw new BusinessException(ResponseCode.EVOUCHER_NOT_FOUND);
         }
@@ -41,7 +41,7 @@ public class EvoucherService {
 
     public ApiWrapperResponse<List<GetAllVoucherResponse>> getOtherVouchers() {
         List<Evoucher> otherEvouchers = evoucherRepository.findByCreatedByAndStatusNot(
-                String.valueOf(authService.getCurrentUserId()), String.valueOf(Evoucher.Status.UNUSED));
+                String.valueOf(authService.getCurrentUsername()), Evoucher.Status.UNUSED.name());
         if (otherEvouchers.isEmpty()) {
             throw new BusinessException(ResponseCode.EVOUCHER_NOT_FOUND);
         }
