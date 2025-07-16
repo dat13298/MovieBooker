@@ -9,7 +9,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "bookings")
@@ -44,7 +46,7 @@ public class Booking extends BaseEntity {
     private List<BookingSeat> bookingSeats = new ArrayList<>();
 
     @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<FoodBooking> foodBookings = new ArrayList<>();
+    private Set<FoodBooking> foodBookings = new HashSet<>();
 
     @Column(name = "txn_number")
     private String txnNumber;

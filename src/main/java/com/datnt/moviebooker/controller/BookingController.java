@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,14 +67,9 @@ public class BookingController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<Page<BookingResponse>> getMyBookings(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
+    public ResponseEntity<List<BookingResponse>> getMyBookings() {
         Long userId = authService.getCurrentUserId();
-        Page<BookingResponse> bookings = bookingService.getBookingsByUser(userId, page, size);
-
-        return ResponseEntity.ok(bookings);
+        return ResponseEntity.ok(bookingService.getBookingsByUser(userId));
     }
 
 

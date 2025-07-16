@@ -125,6 +125,18 @@ public class BookingService {
 
         booking = bookingRepository.save(booking);
 
+        // ✅ Ghi ghế vào booking_seat
+        List<BookingSeat> bookingSeats = new ArrayList<>();
+        for (Seat seat : seats) {
+            BookingSeat bs = BookingSeat.builder()
+                    .booking(booking)
+                    .seat(seat)
+                    .price(seat.getPrice())
+                    .build();
+            bookingSeats.add(bs);
+        }
+        bookingSeatRepository.saveAll(bookingSeats);
+
         for (FoodBooking fb : foodBookings) {
             fb.setBooking(booking);
         }
@@ -132,6 +144,7 @@ public class BookingService {
 
         return booking;
     }
+
 
 
     @Transactional
@@ -158,9 +171,11 @@ public class BookingService {
         }
     }
 
-    public Page<BookingResponse> getBookingsByUser(Long userId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return bookingRepository.findByUser_Id(userId, pageable)
-                .map(bookingMapper::toResponse);
+    public List<BookingResponse> getBookingsByUser(Long userId) {
+        List<Booking> bookings = bookingRepository.findByUserIdWithDetails(userId);
+        return bookings.stream()
+                .map(bookingMapper::toResponse)
+                .toList();
     }
+
 }
