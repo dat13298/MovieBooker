@@ -3,6 +3,7 @@ package com.datnt.moviebooker.controller;
 import com.datnt.moviebooker.dto.AdminCreateUserRequest;
 import com.datnt.moviebooker.dto.UserRegisterRequest;
 import com.datnt.moviebooker.dto.UserResponse;
+import com.datnt.moviebooker.dto.UserUpdateRequest;
 import com.datnt.moviebooker.service.AuthService;
 import com.datnt.moviebooker.service.UserService;
 import jakarta.validation.Valid;
@@ -30,7 +31,19 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    @GetMapping("/{id}")
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateCurrentUser(@RequestBody @Valid UserUpdateRequest request) {
+        Long userId = authService.getCurrentUserId();
+        return ResponseEntity.ok(userService.updateCurrentUser(request, userId));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser() {
+        Long userId = authService.getCurrentUserId();
+        return ResponseEntity.ok(userService.getUserById(userId));
+    }
+
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
@@ -47,20 +60,15 @@ public class UserController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:\\d+}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/me")
-    public ResponseEntity<UserResponse> updateCurrentUser(@RequestBody Map<String, Object> updates) {
-        Long userId = authService.getCurrentUserId();
-        return ResponseEntity.ok(userService.updateCurrentUser(updates, userId));
-    }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}")
+    @PutMapping("/{id:\\d+}")
     public ResponseEntity<UserResponse> updateUserByAdmin(@PathVariable Long id, @RequestBody Map<String, Object> updates) {
         return ResponseEntity.ok(userService.updateUserByAdmin(id, updates));
     }
