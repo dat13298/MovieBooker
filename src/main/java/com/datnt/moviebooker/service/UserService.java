@@ -6,10 +6,12 @@ import com.datnt.moviebooker.constant.Role;
 import com.datnt.moviebooker.dto.AdminCreateUserRequest;
 import com.datnt.moviebooker.dto.UserRegisterRequest;
 import com.datnt.moviebooker.dto.UserResponse;
+import com.datnt.moviebooker.dto.UserUpdateRequest;
 import com.datnt.moviebooker.entity.User;
 import com.datnt.moviebooker.exception.BusinessException;
 import com.datnt.moviebooker.mapper.UserMapper;
 import com.datnt.moviebooker.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -92,34 +94,32 @@ public class UserService {
         }
     }
 
-    public UserResponse updateCurrentUser(Map<String, Object> updates, Long userId) {
+    @Transactional
+    public UserResponse updateCurrentUser(UserUpdateRequest request, Long userId) {
         try {
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new BusinessException(ResponseCode.USER_NOT_FOUND));
 
-            if (updates.containsKey("username")) {
-                user.setUsername((String) updates.get("username"));
-            }
-            if (updates.containsKey("email")) {
-                user.setEmail((String) updates.get("email"));
-            }
-            if (updates.containsKey("phone")) {
-                user.setPhoneNumber((String) updates.get("phone"));
-            }
-            if (updates.containsKey("gender")) {
-                user.setGender(Gender.valueOf((String) updates.get("gender")));
-            }
-            if (updates.containsKey("dob")) {
-                String dobStr = (String) updates.get("dob");
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-                try {
-                    Date dob = formatter.parse(dobStr);
-                    user.setDoB(dob);
-                } catch (ParseException e) {
-                    throw new BusinessException(ResponseCode.CONFLICT, "Ngày sinh không hợp lệ (yyyy-MM-dd)");
-                }
+            user.setUsername(request.getUsername());
+            user.setEmail(request.getEmail());
+            user.setPhoneNumber(request.getPhone());
+
+            String genderStr = request.getGender();
+            switch (genderStr) {
+                case "Nam" -> user.setGender(Gender.MALE);
+                case "Nữ" -> user.setGender(Gender.FEMALE);
+                case "Khác" -> user.setGender(Gender.UNKNOWN);
+                default -> throw new BusinessException(ResponseCode.CONFLICT, "Giới tính không hợp lệ");
             }
 
+
+            try {
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+                Date dob = formatter.parse(request.getDob());
+                user.setDoB(dob);
+            } catch (ParseException e) {
+                throw new BusinessException(ResponseCode.CONFLICT, "Ngày sinh không hợp lệ (yyyy-MM-dd)");
+            }
             userRepository.save(user);
             return userMapper.toResponse(user);
         } catch (DataIntegrityViolationException ex) {
