@@ -7,9 +7,7 @@ import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
-@Table(name = "seats",
-        uniqueConstraints = @UniqueConstraint(
-                columnNames = {"screen_id","row_idx","col_idx"}))
+@Table(name = "seats")
 @Getter
 @Setter
 @Builder

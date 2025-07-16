@@ -53,4 +53,7 @@ public class Booking extends BaseEntity {
 
     @Column(name = "total_amount", nullable = false, updatable = false)
     private Long totalAmount;
+
+    @Column(name = "booking_code", unique = true, nullable = false, updatable = false, length = 20)
+    private String bookingCode;
 }

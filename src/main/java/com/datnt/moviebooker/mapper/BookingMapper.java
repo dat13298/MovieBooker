@@ -52,7 +52,8 @@ public class BookingMapper {
                 movieTitle,
                 theaterName,
                 seatCodes,
-                showHour
+                showHour,
+                booking.getBookingCode()
         );
     }
 }

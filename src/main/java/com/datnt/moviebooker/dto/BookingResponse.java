@@ -16,6 +16,7 @@ public record BookingResponse(
         String movieTitle,
         String theaterName,
         List<String> seatCodes,
-        String showTime
+        String showTime,
+        String bookingCode
 ) {}
 

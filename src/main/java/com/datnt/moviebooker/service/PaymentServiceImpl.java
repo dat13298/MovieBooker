@@ -34,6 +34,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final WebSocketService webSocketService;
     private final PointService pointService;
     private final EvoucherTransactionService evoucherTransactionService;
+    private final BookingService bookingService;
 
     @Override
     public PaymentResponse createPayment(PaymentRequest request) {
@@ -62,7 +63,8 @@ public class PaymentServiceImpl implements PaymentService {
         vnpParams.put("vnp_TxnRef", vnpTxnRef);
         vnpParams.put("vnp_OrderInfo", "Thanh toan ve #" + booking.getId());
         vnpParams.put("vnp_OrderType", "other");
-        vnpParams.put("vnp_ReturnUrl", vnPayConfig.getReturnUrl());
+        String returnUrl = request.getReturnUrl();
+        vnpParams.put("vnp_ReturnUrl", returnUrl);
         vnpParams.put("vnp_IpAddr", "127.0.0.1");
         vnpParams.put("vnp_Locale", "vn");
         vnpParams.put("vnp_CreateDate", now.format(formatter));
@@ -137,9 +139,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         if ("00".equals(vnpResponseCode)) {
             payment.setStatus(PaymentStatus.SUCCESS);
-            payment.getBooking().setStatus(Status.SUCCESS);
+            bookingService.finalizeBookingAfterPayment(payment.getBooking().getId(), true);
         } else {
             payment.setStatus(PaymentStatus.FAILED);
+            bookingService.finalizeBookingAfterPayment(payment.getBooking().getId(), false);
         }
 
         payment.setPayDate(LocalDateTime.now());

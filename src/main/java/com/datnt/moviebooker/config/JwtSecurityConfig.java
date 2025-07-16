@@ -72,6 +72,7 @@ public class JwtSecurityConfig {
                                 "/topic/**",
                                 "/app/**"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/show-times/**").permitAll()
                         .requestMatchers("/api/payment/vnpay-return").permitAll()//vnpay return
                         .requestMatchers(HttpMethod.GET, "/api/movies/**").permitAll()
                         .requestMatchers("/api/auth/**", "/api/users/register", "/api/reset-password/**").permitAll()

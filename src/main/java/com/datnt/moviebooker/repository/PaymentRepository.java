@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByVnpTxnRef(String vnpTxnRef);
+    void deleteByBookingId(Long bookingId);
 }

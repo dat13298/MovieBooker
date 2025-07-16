@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,9 +33,7 @@ public class BookingController {
     public ResponseEntity<?> createBooking(@RequestBody @Valid BookingRequest request) {
         Long userId = authService.getCurrentUserId();
         String username = authService.getCurrentUsername();
-        String bookingId = UUID.randomUUID().toString();  // create bookingId for tracking booking status
 
-        // check if seat is already booked or not locked
         for (Long seatId : request.seatIds()) {
             String lockedBy = redisService.getData("seat_lock:" + request.showTimeId() + ":" + seatId);
             if (lockedBy == null || !lockedBy.equals(username)) {
@@ -42,18 +41,23 @@ public class BookingController {
             }
         }
 
-        Booking booking = bookingService.createPendingBooking(request.showTimeId(), request.seatIds(), request.comboItems(), userId);
+        Booking booking = bookingService.createPendingBooking(
+                request.showTimeId(),
+                request.seatIds(),
+                request.comboItems(),
+                userId
+        );
 
-        // create message and send to Kafka
         BookingMessage message = new BookingMessage();
-        message.setBookingId(bookingId);
+        message.setBookingId(String.valueOf(booking.getId()));
         message.setUserId(userId);
         message.setShowTimeId(request.showTimeId());
         message.setSeatIds(request.seatIds());
 
         kafkaProducer.sendBookingMessage(message);
 
-        // Trả về bookingId và totalAmount để gọi API VNPAY redirect
+        redisService.saveData(String.valueOf(booking.getId()), "PENDING", 60, TimeUnit.SECONDS);
+
         return ResponseEntity.ok(Map.of(
                 "bookingId", booking.getId(),
                 "amount", booking.getTotalAmount()

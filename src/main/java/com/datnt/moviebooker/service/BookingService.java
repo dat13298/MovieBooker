@@ -33,6 +33,7 @@ public class BookingService {
     private final ComboFoodRepository comboFoodRepository;
     private final FoodBookingRepository foodBookingRepository;
     private final ComboItemMapper comboItemMapper;
+    private final PaymentRepository paymentRepository;
 
     public boolean isSeatAlreadyBooked(Long seatId, Long showTimeId) {
         return bookingSeatRepository.existsBySeat_IdAndBooking_ShowTime_Id(seatId, showTimeId);
@@ -55,6 +56,7 @@ public class BookingService {
                 .user(user)
                 .showTime(showTime)
                 .status(Status.PENDING)
+                .bookingCode(generateBookingCode())
                 .build();
         booking = bookingRepository.save(booking);// save Booking
 
@@ -91,6 +93,10 @@ public class BookingService {
             throw new RuntimeException("You do not have permission to cancel this booking!");
         }
 
+        paymentRepository.deleteByBookingId(bookingId);
+
+        foodBookingRepository.deleteByBooking_Id(bookingId);
+
         // Delete BookingSeat first
         bookingSeatRepository.deleteByBooking_Id(bookingId);
 
@@ -120,6 +126,7 @@ public class BookingService {
                 .user(user)
                 .showTime(showTime)
                 .status(Status.PENDING)
+                .bookingCode(generateBookingCode())
                 .totalAmount(totalSeats + totalCombos)
                 .build();
 
@@ -159,7 +166,7 @@ public class BookingService {
             Seat seat = seatRepository.findById(seatId)
                     .orElseThrow(() -> new RuntimeException("Seat not found: " + seatId));
 
-            seat.setStatus(SeatStatus.BOOKED);
+            seat.setStatus(SeatStatus.UNAVAILABLE);
             seatRepository.save(seat);
 
             BookingSeat bs = BookingSeat.builder()
@@ -171,6 +178,40 @@ public class BookingService {
         }
     }
 
+    @Transactional
+    public void finalizeBookingAfterPayment(Long bookingId, boolean isSuccess) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (isSuccess) {
+            booking.setStatus(Status.SUCCESS);
+            bookingRepository.save(booking);
+
+            List<BookingSeat> bookingSeats = bookingSeatRepository.findByBooking_Id(bookingId);
+            for (BookingSeat bs : bookingSeats) {
+                Seat seat = bs.getSeat();
+                seat.setStatus(SeatStatus.BOOKED);
+                seatRepository.save(seat);
+            }
+
+        } else {
+            List<BookingSeat> bookingSeats = bookingSeatRepository.findByBooking_Id(bookingId);
+            for (BookingSeat bs : bookingSeats) {
+                Seat seat = bs.getSeat();
+                seat.setStatus(SeatStatus.AVAILABLE);
+                seatRepository.save(seat);
+            }
+
+            // Xóa các quan hệ phụ
+            paymentRepository.deleteByBookingId(bookingId);
+            foodBookingRepository.deleteByBooking_Id(bookingId);
+            bookingSeatRepository.deleteByBooking_Id(bookingId);
+
+            // Xóa booking
+            bookingRepository.delete(booking);
+        }
+    }
+
     public List<BookingResponse> getBookingsByUser(Long userId) {
         List<Booking> bookings = bookingRepository.findByUserIdWithDetails(userId);
         return bookings.stream()
@@ -178,4 +219,7 @@ public class BookingService {
                 .toList();
     }
 
+    private String generateBookingCode() {
+        return "BK" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
 }
