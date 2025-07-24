@@ -70,6 +70,10 @@ public class ResetPasswordService {
                 throw new BusinessException(ResponseCode.PASSWORD_RESET_REQUEST_NOT_FOUND);
             }
 
+            if (!request.getOtp().equals(requestResetPassword.getOtpCode())) {
+                throw new BusinessException(ResponseCode.INVALID_OTP, "Mã OTP chính xác");
+            }
+
             // Kiểm tra OTP đã sử dụng chưa
             if (requestResetPassword.isUsed()) {
                 throw new BusinessException(ResponseCode.INVALID_OTP, "OTP đã được sử dụng");
