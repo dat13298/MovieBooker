@@ -74,6 +74,7 @@ public class ResetPasswordService {
                 throw new BusinessException(ResponseCode.INVALID_OTP, "Mã OTP chính xác");
             }
 
+
             // Kiểm tra OTP đã sử dụng chưa
             if (requestResetPassword.isUsed()) {
                 throw new BusinessException(ResponseCode.INVALID_OTP, "OTP đã được sử dụng");
