@@ -140,21 +140,8 @@ public class PaymentServiceImpl implements PaymentService {
         if ("00".equals(vnpResponseCode)) {
             payment.setStatus(PaymentStatus.SUCCESS);
             bookingService.finalizeBookingAfterPayment(payment.getBooking().getId(), true);
-        } else {
-            payment.setStatus(PaymentStatus.FAILED);
-            bookingService.finalizeBookingAfterPayment(payment.getBooking().getId(), false);
-        }
 
-        payment.setPayDate(LocalDateTime.now());
-        payment.setVnpResponseCode(vnpResponseCode);
-        payment.setVnpTransactionNo(vnpTransactionNo);
-        payment.setBankCode(bankCode);
-        paymentRepository.save(payment);
-
-        webSocketService.sendBookingStatus(payment.getBooking().getId(),
-                payment.getStatus().name());
-        // Tích điểm cho người dùng để đổi voucher
-        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+//            Tich diem
             var point = pointService.findByUserId(payment.getBooking().getUser().getId());
             if (point != null) {
                 if (payment.getAmount() > 85000) {
@@ -181,7 +168,19 @@ public class PaymentServiceImpl implements PaymentService {
                     log.info("Payment amount is too low to earn points: {}", payment.getAmount());
                 }
             }
+        } else {
+            payment.setStatus(PaymentStatus.FAILED);
+            bookingService.finalizeBookingAfterPayment(payment.getBooking().getId(), false);
         }
+
+        payment.setPayDate(LocalDateTime.now());
+        payment.setVnpResponseCode(vnpResponseCode);
+        payment.setVnpTransactionNo(vnpTransactionNo);
+        payment.setBankCode(bankCode);
+        paymentRepository.save(payment);
+
+        webSocketService.sendBookingStatus(payment.getBooking().getId(),
+                payment.getStatus().name());
 
         return "Payment " + payment.getStatus();
     }
