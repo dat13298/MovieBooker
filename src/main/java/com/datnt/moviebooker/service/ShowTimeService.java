@@ -83,11 +83,10 @@ public class ShowTimeService {
         ShowTime showTime = showTimeMapper.toEntity(request, movie, screen);
         ShowTime savedShowTime = showTimeRepository.save(showTime);
 
-        updateShowTimeCache(savedShowTime);
+        clearShowTimeCache();
 
         return showTimeMapper.toResponse(savedShowTime);
     }
-
     public ShowTimeResponse updateShowTime(Long id, ShowTimeRequest request) {
         return showTimeRepository.findById(id).map(showTime -> {
             Movie movie = movieRepository.findById(request.movieId())
@@ -113,7 +112,8 @@ public class ShowTimeService {
             throw new RuntimeException("ShowTime not found!");
         }
         showTimeRepository.deleteById(id);
-        redisTemplate.opsForHash().delete(SHOWTIME_CACHE_KEY, id.toString());
+
+        clearShowTimeCache();
     }
 
     public ShowTime findEntityById(Long id) {

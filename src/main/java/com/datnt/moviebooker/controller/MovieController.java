@@ -25,7 +25,7 @@ public class MovieController {
     @GetMapping
     public ResponseEntity<Page<MovieResponse>> findAll(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "30") int size,
             @RequestParam(required=false) String keyword,
             @RequestParam(required=false) String screenType,
             @RequestParam(required=false) Boolean is18Plus,
